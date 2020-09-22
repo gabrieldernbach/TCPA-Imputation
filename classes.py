@@ -44,21 +44,21 @@ class ResBlock(nn.Module):
         self.layers1 = nn.Sequential(
             bn_linear(input_dim, width[0]),
             activation,
-            nn.Dropout(p=0.05),
+            nn.Dropout(p=0.2),
             bn_linear(width[0], input_dim),
             activation if act_bool else nn.Identity()
         )
         self.layers2 = nn.Sequential(
             bn_linear(input_dim, width[1]),
             activation,
-            nn.Dropout(p=0.05),
+            nn.Dropout(p=0.2),
             bn_linear(width[1], input_dim),
             activation if act_bool else nn.Identity()
         )
         self.layers3 = nn.Sequential(
             bn_linear(input_dim, width[2]),
             activation,
-            nn.Dropout(p=0.05),
+            nn.Dropout(p=0.2),
             bn_linear(width[2], input_dim),
             activation if act_bool else nn.Identity()
         )

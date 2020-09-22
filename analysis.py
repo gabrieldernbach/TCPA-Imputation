@@ -24,8 +24,8 @@ def loop(data, p, n_epochs, test, activation, width, depth, trainbool = True, te
     lr = 0.001
     results = []
     for i in range(n_epochs):
-        if i == 5: lr = 0.0001
-        if i == 8: lr = 0.00002
+        if i == 5: lr = 0.0005
+
         if i%test_every == 0 and test:
             results.append(test_it(net, testloader, repeats=repeats))
             plot_results(results)
@@ -69,7 +69,6 @@ class Analysis:
                                     resultlist, _ = loop(data, p, n_epochs=1, test=True, activation=activation,
                                                    width=width, depth=depth,
                                                    test_every=1, trainbool=False, net = self.net, repeats=self.repeats)
-
                                     myresult = np.array(resultlist[0])
                                     self.results[z, h, i, j, k, l, :] = myresult
 

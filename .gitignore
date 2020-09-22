@@ -1,2 +1,4 @@
 venv
 __pycache__/
+MNIST_net.pt
+recursive_net.pt
