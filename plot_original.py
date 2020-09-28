@@ -14,7 +14,7 @@ log_data.columns = ['it', 'var', 'err', '1','2','3','4']
 
 err = log_data['err']
 its = log_data['it']
-plt.plot(its[:9], err[:9])
+plt.plot(its[:10], err[:10])
 plt.ylabel('MSE')
 plt.xlabel('epochs')
 
