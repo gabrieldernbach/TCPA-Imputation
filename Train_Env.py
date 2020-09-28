@@ -12,13 +12,12 @@ import torch.nn.functional as F
 from functions import get_dataloaders, plot_results
 from Classes import *
 from itertools import product
-import shap
 
 class Train_env:
     def __init__(self,data, load_model=True):
         self.data = data
         if os.path.isfile('recursive_net.pt') and load_model:
-            print('net found')
+            print('net found, loading net')
             self.net = torch.load('recursive_net.pt')
             self.net.SHAP=False
         else: self.net = None
@@ -33,7 +32,7 @@ class Train_env:
         self.trainloader, self.testloader = get_dataloaders(self.data, train_dist, test_dist)
 
         if self.net is None:
-            self.net = ResNet(self.data.shape[1], width=width, depth=depth, variational = self.variational) #if self.net is None else None#später self.os is none
+            self.net = VariationalResNet(self.data.shape[1], width=width, depth=depth, variational = self.variational) #if self.net is None else None#später self.os is none
 
         for i in range(n_epochs):
             if i%test_every == 0:
@@ -78,6 +77,7 @@ class Train_env:
             prediction, pred_history, nans = self.net(test_data, repeats = self.test_repeats)
             print(nans.shape, nans.sum())
             loss = criterion(prediction, test_target, reduction = 'none').mean(dim=1)
+            print(loss)
             mse_losses.append(tc.tensor([criterion(pred[nans], test_target[nans]) for pred in pred_history]).unsqueeze(0))
 
         all_mse_losses = tc.cat(mse_losses, dim=0).mean(dim=0)
@@ -104,25 +104,9 @@ class Train_env:
         print(results.shape)
         self.grid_search_results= results
 
-    def SHAP_values(self):
-        device = tc.device('cpu')
-        self.net.cpu().eval()
-        self.net.SHAP=True
-        _,testloader = get_dataloaders(self.data, 0.9, (0.1,0.9))
-        batch = next(iter(testloader))
-        data, target = batch
-        background = target[:500]  # masked or unmasked data?
 
-        test_data = tc.ones(self.data.shape).float()
-        #test_data = F.one_hot(tc.tensor([1]),num_classes = self.data.shape[1]).float()
-        #test_data = data[200:202]
-        e = shap.GradientExplainer(self.net, background)
-        shap_values = e.shap_values(test_data)
-        tensor = tc.tensor(shap_values).squeeze()
-        print('shap_values', shap_values)
-        np.save('results/SHAP.npy',np.array(tensor))
 
-        return np.array(tensor)
+
 
 
 

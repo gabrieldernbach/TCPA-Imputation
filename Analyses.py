@@ -3,10 +3,8 @@ import torch as tc
 import torch.nn as nn
 import torch.autograd
 from Train_Env import *
-from itertools import permutations, product
-import matplotlib.pyplot as plt
+
 import pandas as pd
-import shap
 
 print(os.getcwd())
 data_with_names = pd.read_csv('../data2/TCPA_data_sel.csv')
@@ -23,7 +21,7 @@ grid_search_dict = {
     'test_dist': [0.2]
 }
 train_dist = ((0.1,0.9))
-test_dist = (0.90)
+test_dist = (0.50)
 activations = [nn.ReLU()]
 n_epochs = 3000
 test_every = 30
@@ -32,12 +30,9 @@ depth= 4
 variational = True
 lr = 0.0001
 
-train_env = Train_env(data, load_model=True)  # specify network
+train_env = Train_env(data, load_model=False)  # specify network
 train_env.train_network(width, depth, variational, train_dist, test_dist, n_epochs=n_epochs, test_every=test_every) # specify training and test
-
-train_env.SHAP_values()
-
-
+train_env.data_shapley()
 
 
 

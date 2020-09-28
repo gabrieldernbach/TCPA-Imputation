@@ -66,8 +66,6 @@ class ResNet(nn.Module):
     def forward(self, x, repeats = 10):
         y = x.clone()
         nans = tc.isnan(x)
-        #if not self.training: print(nans.sum())
-
         notnans = ~nans
         y[nans] = self.init_nan
         y_history = []
@@ -80,3 +78,48 @@ class ResNet(nn.Module):
         else:
             return(y, y_history, nans)
 
+
+class VariationalResNet(ResNet):
+    def __init__(self, input_dim, width, depth, variational, SHAP= False):
+        super(ResNet,self).__init__()
+        self.SHAP = SHAP
+        self.variational = variational
+        self.init_nan = nn.Parameter(torch.tensor(0.0, requires_grad=True))
+
+        self.enc = nn.Sequential(
+            *[ResBlock(input_dim, width, act_bool=True) for _ in range(depth-1)]
+        )
+
+        self.mean_layer = nn.Linear(input_dim, width)
+        self.logvar_layer = nn.Linear(input_dim, width)
+
+        self.dec = nn.Sequential(
+            nn.Linear(width, input_dim),
+            nn.ReLU(),
+            ResBlock(input_dim, width, act_bool=False)
+        )
+
+    def sample(self, mean, log_var):
+        std = torch.exp(0.5 * log_var)
+        eps = torch.randn_like(std)
+        return mean + eps * std
+
+    def forward(self, x, repeats = 10):
+        y = x.clone()
+        nans = tc.isnan(x)
+        notnans = ~nans
+        y[nans] = self.init_nan
+        y_history = []
+
+        for i in range(repeats):
+            y = self.enc(y)
+            mean_ = self.mean_layer(y)
+            var_ = self.logvar_layer(y)
+            latent = self.sample(mean_, var_)
+            y = self.dec(latent)
+            y[notnans] = x[notnans]
+            y_history.append(y)
+        if self.SHAP:
+            return y
+        else:
+            return(y, y_history, nans)
