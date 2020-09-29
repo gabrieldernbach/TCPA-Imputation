@@ -38,7 +38,7 @@ class ResBlock(nn.Module):
     def __init__(self, input_dim, width,  act_bool, activation=nn.ReLU()):
         super(ResBlock, self).__init__()
 
-        self.alpha = nn.Parameter(torch.tensor(1.0, requires_grad=True))
+        self.alpha = nn.Parameter(torch.tensor(1.0, requires_grad=False))
         self.input_dim, self.act_bool = input_dim, act_bool
         self.layers = nn.Sequential(
             bn_linear(input_dim, width),
@@ -49,7 +49,7 @@ class ResBlock(nn.Module):
         )
 
     def forward(self,x):
-        residual = x.clone() if self.act_bool else tc.zeros(x.shape).cuda()
+        residual = x.clone() if self.act_bool else tc.zeros(x.shape)
         return residual*self.alpha + self.layers(x)
 
 
@@ -80,22 +80,21 @@ class ResNet(nn.Module):
 
 
 class VariationalResNet(ResNet):
-    def __init__(self, input_dim, width, depth, variational, SHAP= False):
+    def __init__(self, input_dim, width, sample_width, depth, variational, SHAP= False):
         super(ResNet,self).__init__()
         self.SHAP = SHAP
         self.variational = variational
         self.init_nan = nn.Parameter(torch.tensor(0.0, requires_grad=True))
 
         self.enc = nn.Sequential(
-            *[ResBlock(input_dim, width, act_bool=True) for _ in range(depth-1)]
+            *[ResBlock(input_dim, width, act_bool=False) for _ in range(depth)]
         )
 
-        self.mean_layer = nn.Linear(input_dim, width)
-        self.logvar_layer = nn.Linear(input_dim, width)
+        self.mean_layer = nn.Linear(input_dim, sample_width)
+        self.logvar_layer = nn.Linear(input_dim, sample_width)
 
         self.dec = nn.Sequential(
-            nn.Linear(width, input_dim),
-            nn.ReLU(),
+            nn.Linear(sample_width, input_dim),
             ResBlock(input_dim, width, act_bool=False)
         )
 

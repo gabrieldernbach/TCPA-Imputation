@@ -1,16 +1,11 @@
 import os
 import torch
 import torch as tc
-import torch.nn as nn
 import torch.autograd
-import matplotlib.pyplot as plt
-import pandas as pd
-import random
 import numpy as np
-import math
 import torch.nn.functional as F
 from functions import get_dataloaders, plot_results
-from Classes import *
+from Classes import VariationalResNet, Mydataset
 from itertools import product
 
 class Train_env:
@@ -25,14 +20,14 @@ class Train_env:
         self.result_shape = None
         self.grid_search_dict = None
 
-    def train_network(self, width, depth, variational,  train_dist, test_dist, lr = 0.001, n_epochs=2, test_every=1, trainbool = True, test_repeats=5):
+    def train_network(self, width, sample_width, depth, variational,  train_dist, test_dist, lr = 0.001, n_epochs=2, test_every=1, trainbool = True, test_repeats=5):
         self.variational = variational
         self.test_result = []
         self.test_repeats = test_repeats
         self.trainloader, self.testloader = get_dataloaders(self.data, train_dist, test_dist)
 
         if self.net is None:
-            self.net = VariationalResNet(self.data.shape[1], width=width, depth=depth, variational = self.variational) #if self.net is None else None#später self.os is none
+            self.net = VariationalResNet(self.data.shape[1], width=width, sample_width=sample_width, depth=depth, variational = self.variational) #if self.net is None else None#später self.os is none
 
         for i in range(n_epochs):
             if i%test_every == 0:
@@ -81,7 +76,6 @@ class Train_env:
             mse_losses.append(tc.tensor([criterion(pred[nans], test_target[nans]) for pred in pred_history]).unsqueeze(0))
 
         all_mse_losses = tc.cat(mse_losses, dim=0).mean(dim=0)
-        #print('all_mse_result:', all_mse_losses)
         self.test_result.append(all_mse_losses.unsqueeze(1))
 
     def grid_search(self, **kwargs):
