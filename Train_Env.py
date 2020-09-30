@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from functions import get_dataloaders, plot_results
 from Classes import VariationalResNet, Mydataset
 from itertools import product
+import pdb
 
 class Train_env:
     def __init__(self,data, load_model=True):
@@ -54,8 +55,13 @@ class Train_env:
             train_data = train_data.to(device)
             train_target = train_target.to(device)
 
-            prediction,_, _= self.net(train_data)
-            loss = criterion(prediction, train_target)
+            prediction,_, _, mean_, log_var_ = self.net(train_data)
+
+            if self.variational:
+                kl = -0.5 * torch.mean(1 + log_var_ - mean_.pow(2) - log_var_.exp())
+
+            else: kl=0
+            loss = criterion(prediction, train_target) + kl
             loss.backward()
             optimizer.step()
 
@@ -69,9 +75,10 @@ class Train_env:
             test_data = test_data.to(device)
             test_target = test_target.to(device)
 
-            prediction, pred_history, nans = self.net(test_data, repeats = self.test_repeats)
+            prediction, pred_history, nans,_,_ = self.net(test_data, repeats = self.test_repeats)
             print(nans.shape, nans.sum())
             loss = criterion(prediction, test_target, reduction = 'none').mean(dim=1)
+
             print(loss)
             mse_losses.append(tc.tensor([criterion(pred[nans], test_target[nans]) for pred in pred_history]).unsqueeze(0))
 

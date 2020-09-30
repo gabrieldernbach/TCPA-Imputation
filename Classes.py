@@ -5,6 +5,7 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader, random_split
 import random
 import torch.nn.functional as F
+import pdb
 
 class Mydataset(Dataset):
     def __init__(self, data, p):
@@ -43,13 +44,13 @@ class ResBlock(nn.Module):
         self.layers = nn.Sequential(
             bn_linear(input_dim, width),
             activation,
-            nn.Dropout(p=0.2),
+            nn.Dropout(p=0.1),
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
 
     def forward(self,x):
-        residual = x.clone() if self.act_bool else tc.zeros(x.shape)
+        residual = x.clone() if self.act_bool else tc.zeros(x.shape).cuda()
         return residual*self.alpha + self.layers(x)
 
 
@@ -113,12 +114,13 @@ class VariationalResNet(ResNet):
         for i in range(repeats):
             y = self.enc(y)
             mean_ = self.mean_layer(y)
-            var_ = self.logvar_layer(y)
-            latent = self.sample(mean_, var_)
+            log_var_ = self.logvar_layer(y)
+            latent = self.sample(mean_, log_var_)
             y = self.dec(latent)
             y[notnans] = x[notnans]
             y_history.append(y)
+
         if self.SHAP:
-            return y
+            return y,mean_, log_var_
         else:
-            return(y, y_history, nans)
+            return(y, y_history, nans, mean_, log_var_)

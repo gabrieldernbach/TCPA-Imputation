@@ -26,7 +26,7 @@ activations = [nn.ReLU()]
 n_epochs = 3000
 test_every = 30
 width =512
-sample_width = 30
+sample_width = 1000
 depth= 4
 variational = True
 lr = 0.0001
@@ -34,7 +34,6 @@ test_repeats = 6
 
 train_env = Train_env(data, load_model=False)  # specify network
 train_env.train_network(width, sample_width, depth, variational, train_dist, test_dist, n_epochs=n_epochs, test_every=test_every, test_repeats = test_repeats) # specify training and test
-train_env.data_shapley()
 
 
 

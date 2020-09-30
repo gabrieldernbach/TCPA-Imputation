@@ -11,7 +11,6 @@ def get_dataloaders(data, p_train, p_test):
     data = data[tc.randperm(data.shape[0]),:]
     train_dataset = Mydataset(data[:4000,:], p = p_train)
     test_dataset = Mydataset(data[4000:,:], p = p_test)
-    #traindata, testdata = random_split(dataset, [4000, 730])
     trainloader = DataLoader(train_dataset, batch_size = 2000, shuffle = True)
     testloader = DataLoader(test_dataset, batch_size = 1000, shuffle = True)
     return trainloader, testloader
