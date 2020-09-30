@@ -7,8 +7,10 @@ from torch.utils.data import Dataset, DataLoader, random_split
 import pandas as pd
 from functions import plot_results
 import torch.nn as nn
-from Classes import ResBlock
+from Classes import bn_linear # ResBlock
 import random
+
+#device = tc.device('cpu') # tc.device('cuda' if tc.cuda.is_available() else 'cpu')
 
 data_with_names = pd.read_csv('../data2/TCPA_data_sel.csv')
 ID, data = data_with_names.iloc[:,:2], tc.tensor(data_with_names.iloc[:,2:].values)
@@ -56,7 +58,25 @@ def get_dataloaders(data, p_train, p_test):
     testloader = DataLoader(test_dataset, batch_size = 1000, shuffle = True)
     return trainloader, testloader
 
+class ResBlock(nn.Module):
+    def __init__(self, input_dim, width,  act_bool, activation=nn.ReLU()):
+        super(ResBlock, self).__init__()
+
+        self.alpha = nn.Parameter(tc.tensor(1.0, requires_grad=False))
+        self.input_dim, self.act_bool = input_dim, act_bool
+        self.layers = nn.Sequential(
+            bn_linear(input_dim, width),
+            activation,
+            nn.Dropout(p=0.1),
+            bn_linear(width, input_dim),
+            activation if act_bool else nn.Identity()
+        )
+
+    def forward(self,x):
+        residual = x.clone() if self.act_bool else tc.zeros(x.shape)
+        return residual*self.alpha + self.layers(x)
 #print(get_dataloaders(data,0.3,0.1))
+
 class BoostNet(nn.Module):
     def __init__(self, input_dim, width, sample_width, depth, variational):
         super(BoostNet,self).__init__()
@@ -106,13 +126,14 @@ class StackedNet(nn.Module):
 
 
 class Train_env:
-    def __init__(self,data, load_model=True):
+    def __init__(self,data, load_model=True, device=tc.device('cpu')):
         self.data = data
         if os.path.isfile('Stacked_net.pt') and load_model:
             print('Stackednet found, loading net')
             self.net = torch.load('Stacked_net.pt')
         else: self.net = None
         self.result_shape = None
+        self.device=device
 
     def train_network(self, width, sample_width, depth, variational,  train_dist, test_dist, lr , n_epochs=2, test_every=1, trainbool = True, repeats=5):
         self.variational = variational
@@ -130,7 +151,6 @@ class Train_env:
                 print(self.test_result)
                 #plot_results(self.test_result)
             if trainbool:
-                print('train',i)
                 self.train_it(lr)
                 tc.save(self.net, 'Boost_net.pt')
 
@@ -138,16 +158,14 @@ class Train_env:
         return self.test_result
 
     def train_it(self, lr):
-        device = tc.device('cuda' if tc.cuda.is_available() else 'cpu')
-        self.net.to(device).train()
+        self.net.to(self.device).train()
         optimizer = tc.optim.Adam(self.net.parameters(), lr)
         criterion = F.mse_loss
 
         for i, (train_target, train_masked_data, Mask) in enumerate(self.trainloader):
             optimizer.zero_grad()
 
-            train_target, train_masked_data, Mask = train_target.to(device), train_masked_data.to(device),  Mask.to(device)
-            print('train', Mask.shape)
+            train_target, train_masked_data, Mask = train_target.to(self.device), train_masked_data.to(self.device),  Mask.to(self.device)
 
             loss = 0
             for boostnet in self.net.boostnets:
@@ -155,39 +173,23 @@ class Train_env:
                 kl = -0.5 * tc.mean(1 + log_var_ - mean_.pow(2) - log_var_.exp())
 
                 loss += criterion(prediction[Mask==0], train_target[Mask==0]) + kl
-                train_masked_data = prediction
+                train_masked_data = prediction.detach()
 
             loss.backward()
             optimizer.step()
 
     def test_it(self):
-        device = tc.device('cuda' if tc.cuda.is_available() else 'cpu')
-        self.net.to(device).eval()
+        self.net.to(self.device).eval()
         criterion = F.mse_loss
         mse_losses = []
 
         for i, (test_target, test_masked_data, Mask) in enumerate(self.testloader):
-            test_target, test_masked_data, Mask = test_target.to(device), test_masked_data.to(device), Mask.to(device)
+            test_target, test_masked_data, Mask = test_target.to(self.device), test_masked_data.to(self.device), Mask.to(self.device)
             for boostnet in self.net.boostnets:
+                boostnet.to(self.device)
                 prediction, mean_, log_var_ = boostnet(test_masked_data, Mask)
                 mse_losses.append(tc.tensor([criterion(prediction[Mask==0], test_target[Mask==0])]).unsqueeze(0))
 
         all_mse_losses = tc.cat(mse_losses, dim=0).mean(dim=0)
         self.test_result.append(all_mse_losses.unsqueeze(1))
 
-
-
-train_dist = ((0.1,0.9))
-test_dist = (0.50)
-activations = [nn.ReLU()]
-n_epochs = 1000
-test_every = 10
-width =512
-sample_width = 512
-depth= 3
-variational = True
-lr = 0.0001
-repeats = 3
-
-train_env = Train_env(data, load_model=False)  # specify network
-train_env.train_network(width, sample_width, depth, variational, train_dist, test_dist, lr=lr, n_epochs=n_epochs, test_every=test_every, repeats = repeats) # specify training and test

@@ -50,7 +50,7 @@ class ResBlock(nn.Module):
         )
 
     def forward(self,x):
-        residual = x.clone() if self.act_bool else tc.zeros(x.shape).cuda()
+        residual = x.clone() if self.act_bool else tc.zeros(x.shape).to(device)
         return residual*self.alpha + self.layers(x)
 
 
