@@ -77,9 +77,9 @@ class ResBlock(nn.Module):
         return residual*self.alpha + self.layers(x)
 #print(get_dataloaders(data,0.3,0.1))
 
-class BoostNet(nn.Module):
+class RecursiveNet(nn.Module):
     def __init__(self, input_dim, width, sample_width, depth, variational):
-        super(BoostNet,self).__init__()
+        super(RecursiveNet,self).__init__()
         self.variational = variational
 
         self.enc = nn.Sequential(
@@ -111,16 +111,17 @@ class BoostNet(nn.Module):
         y = tc.where(Mask==1, x, y)
         return y, mean_, log_var_
 
+
 class StackedNet(nn.Module):
     def __init__(self, input_dim, width, sample_width, depth, variational, repeats):
         super(StackedNet,self).__init__()
         self.repeats = repeats
-        self.boostnets = nn.ModuleList([BoostNet(input_dim, width, sample_width, depth, variational) for i in range(self.repeats)])
+        self.recursivenet = RecursiveNet(input_dim, width, sample_width, depth, variational)
 
     def forward(self,x, Mask):
         y = x.clone() #only for my readability
-        for i,boostnet in enumerate(self.boostnets):
-            y, mean_, log_var_ = boostnet(y, Mask)
+        for i in range(self.repeats):
+            y, mean_, log_var_ = self.recursivenet(y, Mask)
         return y
 
 
@@ -128,9 +129,9 @@ class StackedNet(nn.Module):
 class Train_env:
     def __init__(self,data, load_model=True, device=tc.device('cpu')):
         self.data = data
-        if os.path.isfile('boostnet.pt') and load_model:
-            print('boostnet found, loading net')
-            self.net = torch.load('boostnet.pt')
+        if os.path.isfile('recursivenet.pt') and load_model:
+            print('recursivenet found, loading net')
+            self.net = tc.load('recursivenet.pt')
         else: self.net = None
         self.result_shape = None
         self.device=device
@@ -152,7 +153,7 @@ class Train_env:
                 #plot_results(self.test_result)
             if trainbool:
                 self.train_it(lr)
-                tc.save(self.net, 'boostnet.pt')
+                tc.save(self.net, 'recursivenet.pt')
 
         self.test_result = tc.cat(self.test_result, dim = 1)
         return self.test_result
@@ -168,8 +169,8 @@ class Train_env:
             train_target, train_masked_data, Mask = train_target.to(self.device), train_masked_data.to(self.device),  Mask.to(self.device)
 
             loss = 0
-            for boostnet in self.net.boostnets:
-                prediction, mean_, log_var_ = boostnet(train_masked_data, Mask)
+            for i in range(self.net.repeats):
+                prediction, mean_, log_var_ = self.net.recursivenet(train_masked_data, Mask)
                 kl = -0.5 * tc.mean(1 + log_var_ - mean_.pow(2) - log_var_.exp())
 
                 loss += criterion(prediction[Mask==0], train_target[Mask==0]) + kl
@@ -185,9 +186,9 @@ class Train_env:
 
         for i, (test_target, test_masked_data, Mask) in enumerate(self.testloader):
             test_target, test_masked_data, Mask = test_target.to(self.device), test_masked_data.to(self.device), Mask.to(self.device)
-            for boostnet in self.net.boostnets:
-                boostnet.to(self.device)
-                prediction, mean_, log_var_ = boostnet(test_masked_data, Mask)
+            for i in range(self.net.repeats):
+                self.net.to(self.device)
+                prediction, mean_, log_var_ = self.net.recursivenet(test_masked_data, Mask)
                 mse_losses.append(tc.tensor([criterion(prediction[Mask==0], test_target[Mask==0])]).unsqueeze(0))
 
         all_mse_losses = tc.cat(mse_losses, dim=0).mean(dim=0)

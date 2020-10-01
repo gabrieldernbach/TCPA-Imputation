@@ -10,8 +10,9 @@ from itertools import product
 import pdb
 
 class Train_env:
-    def __init__(self,data, load_model=True):
+    def __init__(self,data, load_model=True, device = tc.device('cpu')):
         self.data = data
+        self.device = device
         if os.path.isfile('recursive_net.pt') and load_model:
             print('net found, loading net')
             self.net = torch.load('recursive_net.pt')
@@ -21,14 +22,14 @@ class Train_env:
         self.result_shape = None
         self.grid_search_dict = None
 
-    def train_network(self, width, sample_width, depth, variational,  train_dist, test_dist, lr = 0.001, n_epochs=2, test_every=1, trainbool = True, test_repeats=5):
+    def train_network(self, width, sample_width, depth, variational,  train_dist, test_dist, lr = 0.001, n_epochs=2, test_every=1, trainbool = True, repeats=5):
         self.variational = variational
         self.test_result = []
-        self.test_repeats = test_repeats
+        self.repeats = repeats
         self.trainloader, self.testloader = get_dataloaders(self.data, train_dist, test_dist)
 
         if self.net is None:
-            self.net = VariationalResNet(self.data.shape[1], width=width, sample_width=sample_width, depth=depth, variational = self.variational) #if self.net is None else None#später self.os is none
+            self.net = VariationalResNet(self.data.shape[1], width=width, sample_width=sample_width, depth=depth, variational = self.variational)
 
         for i in range(n_epochs):
             if i%test_every == 0:
@@ -44,16 +45,15 @@ class Train_env:
         return self.test_result
 
     def train_it(self, lr):
-        device = tc.device('cuda' if tc.cuda.is_available() else 'cpu')
-        self.net.to(device).train()
+        self.net.to(self.device).train()
         optimizer = tc.optim.Adam(self.net.parameters(), lr)
         criterion = F.mse_loss
 
         for i, (train_data, train_target) in enumerate(self.trainloader):
             optimizer.zero_grad()
 
-            train_data = train_data.to(device)
-            train_target = train_target.to(device)
+            train_data = train_data.to(self.device)
+            train_target = train_target.to(self.device)
 
             prediction,_, _, mean_, log_var_ = self.net(train_data)
 
@@ -66,16 +66,15 @@ class Train_env:
             optimizer.step()
 
     def test_it(self):
-        device = tc.device('cuda' if tc.cuda.is_available() else 'cpu')
-        self.net.to(device).eval()
+        self.net.to(self.device).eval()
         criterion = F.mse_loss
         mse_losses = []
 
         for i, (test_data, test_target) in enumerate(self.testloader):
-            test_data = test_data.to(device)
-            test_target = test_target.to(device)
+            test_data = test_data.to(self.device)
+            test_target = test_target.to(self.device)
 
-            prediction, pred_history, nans,_,_ = self.net(test_data, repeats = self.test_repeats)
+            prediction, pred_history, nans,_,_ = self.net(test_data, repeats = self.repeats)
             print(nans.shape, nans.sum())
             loss = criterion(prediction, test_target, reduction = 'none').mean(dim=1)
 
