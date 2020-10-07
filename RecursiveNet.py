@@ -17,7 +17,7 @@ ID, data = data_with_names.iloc[:,:2], tc.tensor(data_with_names.iloc[:,2:].valu
 
 class ProteinSet(Dataset):
     def __init__(self, data, p):
-        self.data = data
+        self.data = data.float()
         self.nsamples, self.nfeatures = data.shape
         self.R = self.init_randomsample()
 
@@ -25,7 +25,6 @@ class ProteinSet(Dataset):
             self.p = random.uniform(p[0], p[1])
         else:
             self.p = p
-
 
     def init_randomsample(self):
         tensor_list = [self.data[tc.randperm(self.nsamples),i] for i in range(self.nfeatures)]
@@ -36,8 +35,8 @@ class ProteinSet(Dataset):
 
     def __getitem__(self, idx):
         Mask = tc.distributions.bernoulli.Bernoulli(tc.tensor([self.p] * self.nfeatures)).sample().float()
-        target = self.data[idx, :].float()
-        random_values = self.R[idx, :].float()
+        target = self.data[idx, :]
+        random_values = self.R[idx, :]
         masked_data = tc.where(Mask == 1.0, target, random_values)
 
         return target, masked_data, Mask
@@ -52,8 +51,8 @@ class ProteinSet(Dataset):
 def get_dataloaders(data, p_train, p_test):
     tc.manual_seed(0)
     data = data[tc.randperm(data.shape[0]),:]
-    train_dataset = ProteinSet(data[:4000,:], p = p_train)
-    test_dataset = ProteinSet(data[4000:,:], p = p_test)
+    train_dataset = ProteinSet(data[:3000,:], p = p_train)
+    test_dataset = ProteinSet(data[3000:,:], p = p_test)
     trainloader = DataLoader(train_dataset, batch_size = 2000, shuffle = True)
     testloader = DataLoader(test_dataset, batch_size = 1000, shuffle = True)
     return trainloader, testloader
@@ -62,7 +61,7 @@ class ResBlock(nn.Module):
     def __init__(self, input_dim, width,  act_bool, activation=nn.ReLU()):
         super(ResBlock, self).__init__()
 
-        self.alpha = nn.Parameter(tc.tensor(1.0, requires_grad=False))
+        self.alpha = nn.Parameter(tc.tensor(1.0, requires_grad=True)).to(device)
         self.input_dim, self.act_bool = input_dim, act_bool
         self.layers = nn.Sequential(
             bn_linear(input_dim, width),
@@ -74,8 +73,8 @@ class ResBlock(nn.Module):
 
     def forward(self,x):
         residual = x.clone() if self.act_bool else tc.zeros_like(x)
+        #print(residual.device, self.alpha.device, next(self.layers.parameters()).device)
         return residual*self.alpha + self.layers(x)
-#print(get_dataloaders(data,0.3,0.1))
 
 class RecursiveNet(nn.Module):
     def __init__(self, input_dim, width, sample_width, depth, variational):
@@ -120,10 +119,12 @@ class StackedNet(nn.Module):
 
     def forward(self,x, Mask):
         y = x.clone() #only for my readability
+        cumulative_y = []
         for i in range(self.repeats):
             y, mean_, log_var_ = self.recursivenet(y, Mask)
-        return y
-
+            cumulative_y.append(y)
+        meany = tc.stack(cumulative_y[3:],dim=0).mean(dim=0)
+        return meany
 
 
 class Train_env:
@@ -144,19 +145,20 @@ class Train_env:
 
         if self.net is None:
             self.net = StackedNet(input_dim=self.data.shape[1], width=width, sample_width=sample_width, depth=depth, variational = self.variational, repeats = self.repeats)
-
+        else:
+            self.net.repeats = repeats
         for i in range(n_epochs):
             if i%test_every == 0:
                 print(i)
                 self.test_it()
-                print(self.test_result)
+                print(self.test_result[-1])
                 #plot_results(self.test_result)
             if trainbool:
                 self.train_it(lr)
                 tc.save(self.net, 'recursivenet.pt')
 
-        self.test_result = tc.cat(self.test_result, dim = 1)
-        return self.test_result
+        #self.test_result = tc.cat(self.test_result, dim = 1)
+        #return self.test_result
 
     def train_it(self, lr):
         self.net.to(self.device).train()
@@ -165,16 +167,15 @@ class Train_env:
 
         for i, (train_target, train_masked_data, Mask) in enumerate(self.trainloader):
             optimizer.zero_grad()
-
             train_target, train_masked_data, Mask = train_target.to(self.device), train_masked_data.to(self.device),  Mask.to(self.device)
 
             loss = 0
             for i in range(self.net.repeats):
                 prediction, mean_, log_var_ = self.net.recursivenet(train_masked_data, Mask)
-                kl = -0.5 * tc.mean(1 + log_var_ - mean_.pow(2) - log_var_.exp())
+                train_masked_data = prediction
 
-                loss += criterion(prediction[Mask==0], train_target[Mask==0]) + kl
-                train_masked_data = prediction.detach()
+            kl = -0.5 * tc.mean(1 + log_var_ - mean_.pow(2) - log_var_.exp())
+            loss += criterion(prediction[Mask == 0], train_target[Mask == 0]) + kl
 
             loss.backward()
             optimizer.step()
@@ -182,15 +183,21 @@ class Train_env:
     def test_it(self):
         self.net.to(self.device).eval()
         criterion = F.mse_loss
-        mse_losses = []
 
+        mse_losses=[]
         for i, (test_target, test_masked_data, Mask) in enumerate(self.testloader):
             test_target, test_masked_data, Mask = test_target.to(self.device), test_masked_data.to(self.device), Mask.to(self.device)
-            for i in range(self.net.repeats):
+
+            repeat_losses = []
+            for j in range(self.net.repeats):
                 self.net.to(self.device)
                 prediction, mean_, log_var_ = self.net.recursivenet(test_masked_data, Mask)
-                mse_losses.append(tc.tensor([criterion(prediction[Mask==0], test_target[Mask==0])]).unsqueeze(0))
+                repeat_losses.append(tc.tensor([criterion(prediction[Mask==0], test_target[Mask==0])]))
+            mse_losses.append(tc.cat(repeat_losses, dim=0))
 
-        all_mse_losses = tc.cat(mse_losses, dim=0).mean(dim=0)
+            mean_prediction = self.net(test_masked_data, Mask)
+            mean_loss = criterion(mean_prediction[Mask==0], test_target[Mask==0])
+            print(mean_loss)
+        all_mse_losses = tc.stack(mse_losses,dim=0).mean(0)
         self.test_result.append(all_mse_losses.unsqueeze(1))
 

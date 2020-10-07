@@ -1,86 +1,88 @@
 import torch as tc
 device = tc.device('cpu')
 import torch.nn as nn
-import BoostNet
 import RecursiveNet
 import torch.nn.functional as F
 from torch.utils.data import DataLoader, Dataset
 import os
 import pandas as pd
+import numpy as np
+import random
 
 
 class ShapleySet(Dataset):
-    def __init__(self, data):
-        self.data = data
-        self.nsamples, self.nfeatures = data.shape
+    def __init__(self, data, p, q):
+        tc.manual_seed(0)
+        data = data[tc.randperm(data.shape[0]), :]
+        self.data = data[3000:, :].float()
+        tc.manual_seed(random.randint(1,100000))
+        self.nsamples, self.nfeatures = self.data.shape
         self.R = self.init_randomsample()
-        self.i = 0
-        self.P = None
+        self.p = p
+        self.q = q
+        self.Set, self.Setp = None, None
+        self.getSets()
 
     def init_randomsample(self):
         tensor_list = [self.data[tc.randperm(self.nsamples), i] for i in range(self.nfeatures)]
         return tc.stack(tensor_list).t()
 
     def getSets(self):
-        Set = tc.distributions.bernoulli.Bernoulli(tc.tensor([0.5] * self.nfeatures)).sample()
-        SetP = Set.clone()
-        Set[self.P], SetP[self.P] = 0, 1
-        return Set, SetP
+        self.Set = tc.distributions.bernoulli.Bernoulli(tc.tensor([0.5] * self.nfeatures)).sample()
+        #self.Set[self.q] = 0  # muss das sein?
+        self.Setp = self.Set.clone()
+        self.Set[self.p], self.Setp[self.p] = 0, 1
 
     def __len__(self):
         return self.nsamples
 
     def __getitem__(self, idx):
-        Set, SetP = self.getSets()
-
+        assert self.Set is not None, ('did not sample')
         target = self.data[idx, :]
         random_values = self.R[idx, :]
 
-        masked_data = tc.where(Set == 1, target, random_values)
-        masked_dataP = tc.where(SetP == 1, target, random_values)
+        masked_data = tc.where(self.Set == 1, target, random_values)
+        masked_dataP = tc.where(self.Setp == 1, target, random_values)
 
-        if self.i % self.nsamples == 0:
-            self.R = self.init_randomsample()
-        self.i += 1
-
-        return target.float(), masked_data.float(), Set.float(), masked_dataP.float(), SetP.float()
+        return target, masked_data, self.Set, masked_dataP, self.Setp
 
 
 class Shapley():
-    def __init__(self, data, net, threshold=0.0001):
+    def __init__(self, data, net):
         self.data = data
         self.nsamples, self.nfeatures = data.shape
-        self.net = net
-        self.shapleyset = ShapleySet(data)
+        self.net = net.eval()
         self.shapleyvalues = tc.zeros(self.nsamples, self.nfeatures)
-        self.threshold = threshold
 
-    def calc_shapleyP(self, P):
-        self.shapleyset.P = P
-        self.shapleyloader = DataLoader(self.shapleyset, batch_size= self.nsamples)
-        t = 1
-        meandiff = tc.zeros(self.nfeatures)
+    def calc_shapleypq(self, p, q, steps, device):
+        self.shapleyset = ShapleySet(self.data, p, q)
+        self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples)
+        self.net.to(device)
+        meandiff = tc.zeros(1)
         criterion = F.mse_loss
         proceed = True
-
-        while proceed:
+        convergencechecker = [1000,1] # random numbers
+        for t in range(1, 1+steps):
             for target, masked_data, Set, masked_dataP, SetP in self.shapleyloader:
                 target, masked_data, Set, masked_dataP, SetP = target.to(device), masked_data.to(device), Set.to(
                     device), masked_dataP.to(device), SetP.to(device)
-                pred, predP = self.net(masked_data, Set), self.net(masked_dataP, SetP)
                 with tc.no_grad():
-                    loss, lossP = criterion(pred, target, reduction='none'), criterion(predP, target, reduction='none')
+                    pred, predP = self.net(masked_data, Set), self.net(masked_dataP, SetP)
+                loss, lossP = criterion(pred, target), criterion(predP, target)
 
-                meanloss, meanlossP = loss.mean(dim=0).to(device), lossP.mean(dim=0).to(device)
+                meanloss, meanlossP = loss.to(device), lossP.to(device)
                 meandiff = (t - 1) / t * meandiff + 1 / t * (meanloss - meanlossP)
-                t += 1
-                if t == 1000:
-                    proceed = False
-                    self.shapleyvalues[P, :] = meandiff
+            convergencechecker.append(meandiff)
+            if max(convergencechecker[-10:-1]) - min(convergencechecker[-10:-1]) < 0.0002:
+                print('converged after', len(convergencechecker))
+                print(p, q, meandiff)
+                break
+        self.shapleyvalues[p, q] = meandiff
+        np.save('results/shapley_values', self.shapleyvalues.cpu().detach().numpy())
+        np.savetxt('results/shapley_values', self.shapleyvalues.cpu().detach().numpy(),delimiter=',')
 
-    def calc_shapleyAll(self):
-        for P in range(self.nfeatures):
-            print(P)
-            self.calc_shapleyP(P)
-
+    def calc_shapleyAll(self, device, steps = 1000):
+        for p in range(self.nfeatures):
+            for q in range(self.nfeatures):
+                self.calc_shapleypq(p, q, steps, device)
 

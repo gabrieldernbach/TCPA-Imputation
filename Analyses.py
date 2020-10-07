@@ -1,9 +1,9 @@
+import os
 import sys
 import torch as tc
 import torch.nn as nn
 import torch.autograd
-import Train_Env as TE
-import BoostNet as BN
+#import BoostNet as BN
 import RecursiveNet as RN
 import DataShapley as DS
 import numpy as np
@@ -43,7 +43,6 @@ if mode == "Variational":
 
 
 elif mode == "Boost":
-    device = tc.device('cpu')  # tc.device('cuda' if tc.cuda.is_available() else 'cpu')
 
     train_dist = ((0.1, 0.9))
     test_dist = (0.50)
@@ -63,47 +62,33 @@ elif mode == "Boost":
 
 
 elif mode == 'RecursiveNet': # similar to Variational
-    device = tc.device('cpu')  # tc.device('cuda' if tc.cuda.is_available() else 'cpu')
 
     train_dist = ((0.1, 0.9))
     test_dist = (0.50)
     activations = [nn.ReLU()]
-    n_epochs = 2
-    test_every = 50
-    width = 5
-    sample_width = 5
-    depth = 5
+    n_epochs = 5000
+    test_every = 200
+    width = 512
+    sample_width = 1024
+    depth = 3
     variational = True
     lr = 0.001
-    repeats = 5
+    repeats = 12
 
-    train_env = RN.Train_env(data, load_model=False)  # specify network
+    train_env = RN.Train_env(data, load_model=True, device=device)  # specify network
     train_env.train_network(width, sample_width, depth, variational, train_dist, test_dist, lr=lr, n_epochs=n_epochs,
                             test_every=test_every, repeats=repeats)  # specify training and test
-
 
 elif mode == 'DataShapley':
 
     # make training environment
     train_env = RN.Train_env(data, load_model=True, device=device)  # use either BoostNet or RecursiveNet
     # specify and train network
+    repeats = 4
 
-    train_dist = ((0.1, 0.9))
-    test_dist = (0.50)
-    activations = [nn.ReLU()]
-    n_epochs = 1
-    test_every = 1
-    width = 20
-    sample_width = 10
-    depth = 5
-    variational = True
-    lr = 0.0001
-    repeats = 3
-
-    shapleyset = DS.ShapleySet(data)
     shapley = DS.Shapley(data, train_env.net)
-    shapley.calc_shapleyAll()
-    np.save('results/shapley_values', shapley.shapleyvalues.cpu().detach().numpy)
+    shapley.calc_shapleyAll(steps=1, device=device)
+    np.save('results/shapley_values', shapley.shapleyvalues.cpu().detach().numpy())
 
 
 
