@@ -106,11 +106,16 @@ class RecursiveNet(nn.Module):
         log_var_l = [log_var_l(y) for log_var_l in self.logvar_layer]
         mean_ = tc.stack(mean_l, dim=0).mean(dim=0)
         log_var_ = tc.stack(log_var_l, dim=0).mean(dim=0)
-        latentlist = [self.sample(m, lv) for m, lv in zip(mean_l, log_var_l)]
-        latent = tc.stack(latentlist,dim=0).mean(dim=0)
-        y = self.dec(latent)
 
+        if self.variational:
+            latentlist = [self.sample(m, lv) for m, lv in zip(mean_l, log_var_l)]
+            latent = tc.stack(latentlist,dim=0).mean(dim=0)
+        else:
+            latent = mean_
+
+        y = self.dec(latent)
         y = tc.where(Mask==1, x, y)
+
         return y, mean_, log_var_
 '''
     class RecursiveNet(nn.Module):  # old net 
