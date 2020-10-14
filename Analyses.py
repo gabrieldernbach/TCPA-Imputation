@@ -7,14 +7,16 @@ import torch.autograd
 import RecursiveNet as RN
 import DataShapley as DS
 import numpy as np
+import DataShapley_allq as DSq
 
 import pandas as pd
 
 data_with_names = pd.read_csv('../data2/TCPA_data_sel.csv')
 ID, data = data_with_names.iloc[:,:2], tc.tensor(data_with_names.iloc[:,2:].values)
 #[print(key, list(ID['Tumor']).count(key)) for key in ID['Tumor'].unique()]    #info
+protein_names = data_with_names.columns[2:]
 
-mode = "DataShapley"
+mode = "DataShapley_allq"
 device = tc.device('cpu')
 
 
@@ -68,14 +70,14 @@ elif mode == 'RecursiveNet': # similar to Variational
     activations = [nn.ReLU()]
     n_epochs = 5000
     test_every = 200
-    width = 512
-    sample_width = 1024
-    depth = 3
+    width = 5
+    sample_width = 5
+    depth = 2
     variational = True
     lr = 0.001
-    repeats = 12
+    repeats = 4
 
-    train_env = RN.Train_env(data, load_model=True, device=device)  # specify network
+    train_env = RN.Train_env(data, load_model=False, device=device)  # specify network
     train_env.train_network(width, sample_width, depth, variational, train_dist, test_dist, lr=lr, n_epochs=n_epochs,
                             test_every=test_every, repeats=repeats)  # specify training and test
 
@@ -86,9 +88,18 @@ elif mode == 'DataShapley':
     # specify and train network
     repeats = 4
 
-    shapley = DS.Shapley(data, train_env.net)
+    shapley = DS.Shapley(data, protein_names, train_env.net)
+    shapley.calc_shapleyAll(steps=100, device=device)
+    #np.save('results/shapley_values', shapley.shapleyvalues.cpu().detach().numpy())
+
+
+
+elif mode == 'DataShapley_allq':
+
+    # make training environment
+    train_env = RN.Train_env(data, load_model=True, device=device)  # use either BoostNet or RecursiveNet
+    # specify and train network
+    repeats = 4
+
+    shapley = DSq.Shapley(data, protein_names, train_env.net)
     shapley.calc_shapleyAll(steps=1, device=device)
-    np.save('results/shapley_values', shapley.shapleyvalues.cpu().detach().numpy())
-
-
-

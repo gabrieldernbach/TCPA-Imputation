@@ -61,7 +61,7 @@ class ResBlock(nn.Module):
     def __init__(self, input_dim, width,  act_bool, activation=nn.ReLU()):
         super(ResBlock, self).__init__()
 
-        self.alpha = nn.Parameter(tc.tensor(1.0, requires_grad=True)).to(device)
+        self.alpha = nn.Parameter(tc.tensor(1.0, requires_grad=True))
         self.input_dim, self.act_bool = input_dim, act_bool
         self.layers = nn.Sequential(
             bn_linear(input_dim, width),
@@ -85,8 +85,8 @@ class RecursiveNet(nn.Module):
             *[ResBlock(input_dim, width, act_bool=False) for _ in range(depth)]
         )
 
-        self.mean_layer = nn.Linear(input_dim, sample_width)
-        self.logvar_layer = nn.Linear(input_dim, sample_width)
+        self.mean_layer = nn.ModuleList([nn.Linear(input_dim, sample_width) for _ in range(10)])
+        self.logvar_layer = nn.ModuleList([nn.Linear(input_dim, sample_width) for _ in range(10)])
 
         self.dec = nn.Sequential(
             nn.Linear(sample_width, input_dim),
@@ -102,14 +102,51 @@ class RecursiveNet(nn.Module):
         y = x.clone()
 
         y = self.enc(y)
-        mean_ = self.mean_layer(y)
-        log_var_ = self.logvar_layer(y)
-        latent = self.sample(mean_, log_var_)
+        mean_l = [mean_l(y) for mean_l in self.mean_layer]
+        log_var_l = [log_var_l(y) for log_var_l in self.logvar_layer]
+        mean_ = tc.stack(mean_l, dim=0).mean(dim=0)
+        log_var_ = tc.stack(log_var_l, dim=0).mean(dim=0)
+        latentlist = [self.sample(m, lv) for m, lv in zip(mean_l, log_var_l)]
+        latent = tc.stack(latentlist,dim=0).mean(dim=0)
         y = self.dec(latent)
 
         y = tc.where(Mask==1, x, y)
         return y, mean_, log_var_
+'''
+    class RecursiveNet(nn.Module):  # old net 
+        def __init__(self, input_dim, width, sample_width, depth, variational):
+            super(RecursiveNet, self).__init__()
+            self.variational = variational
 
+            self.enc = nn.Sequential(
+                *[ResBlock(input_dim, width, act_bool=False) for _ in range(depth)]
+            )
+
+            self.mean_layer = nn.Linear(input_dim, sample_width)
+            self.logvar_layer = nn.Linear(input_dim, sample_width)
+
+            self.dec = nn.Sequential(
+                nn.Linear(sample_width, input_dim),
+                *[ResBlock(input_dim, width, act_bool=False) for _ in range(depth)]
+            )
+
+        def sample(self, mean, log_var):
+            std = tc.exp(0.5 * log_var)
+            eps = tc.randn_like(std)
+            return mean + eps * std
+
+        def forward(self, x, Mask):
+            y = x.clone()
+
+            y = self.enc(y)
+            mean_ = self.mean_layer(y)
+            log_var_ = self.logvar_layer(y)
+            latent = self.sample(mean_, log_var_)
+            y = self.dec(latent)
+
+            y = tc.where(Mask == 1, x, y)
+            return y, mean_, log_var_
+'''
 
 class StackedNet(nn.Module):
     def __init__(self, input_dim, width, sample_width, depth, variational, repeats):

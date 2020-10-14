@@ -11,7 +11,8 @@ from joblib import Parallel, delayed
 
 
 class ShapleySet(Dataset):
-    def __init__(self, data, p, q):
+    def __init__(self, data, p, probability):
+        self.probability = probability
         tc.manual_seed(0)
         data = data[tc.randperm(data.shape[0]), :]
         self.data = data[3000:, :].float()
@@ -19,7 +20,6 @@ class ShapleySet(Dataset):
         self.nsamples, self.nfeatures = self.data.shape
         self.R = self.init_randomsample()
         self.p = p
-        self.q = q
         self.Set, self.Setp = None, None
         self.getSets()
 
@@ -28,9 +28,8 @@ class ShapleySet(Dataset):
         return tc.stack(tensor_list).t()
 
     def getSets(self):
-        self.Set = tc.distributions.bernoulli.Bernoulli(tc.tensor([0.5] * self.nfeatures)).sample()
+        self.Set = tc.distributions.bernoulli.Bernoulli(tc.tensor([self.probability] * self.nfeatures)).sample()
         self.Setp = self.Set.clone()
-        self.Set[self.q] = 0  # muss das sein?
         self.Set[self.p], self.Setp[self.p] = 0, 1
 
     def __len__(self):
@@ -56,8 +55,8 @@ class Shapley():
         self.shapleylist = []
         self.protein_names = protein_names
 
-    def calc_shapleypq(self, p, q, steps, device):
-        self.shapleyset = ShapleySet(self.data, p, q)
+    def calc_shapleypq(self, p, steps, device, probability):
+        self.shapleyset = ShapleySet(self.data, p, probability)
         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples)
         self.net.to(device)
         meandiff = tc.zeros(1)
@@ -70,23 +69,19 @@ class Shapley():
                     device), masked_dataP.to(device), SetP.to(device)
                 with tc.no_grad():
                     pred, predP = self.net(masked_data, Set), self.net(masked_dataP, SetP)
-                loss, lossP = criterion(pred[:,q], target[:,q]), criterion(predP[:,q], target[:,q])
-
-                meanloss, meanlossP = loss.to(device), lossP.to(device)
+                loss, lossP = criterion(pred, target, reduction = 'none'), criterion(predP, target, reduction = 'none')
+                meanloss, meanlossP = loss.mean(dim=0), lossP.mean(dim=0)
                 meandiff = (t - 1) / t * meandiff + 1 / t * (meanloss - meanlossP)
-            convergencechecker.append(meandiff)
-            if max(convergencechecker[-10:]) - min(convergencechecker[-10:]) < 0.0001:
-                print('converged after', len(convergencechecker))
-                print(p, q, meandiff)
-                np.savetxt('results/shapley/shapley_valuespv{}qv{}.csv'.format(self.protein_names[p],self.protein_names[q]), meandiff.cpu().detach().numpy())
+                convergencechecker.append(meandiff)
+                print(p, meandiff.shape)
+            if all(abs(convergencechecker[-2] - convergencechecker[-1])<0.00001):
+                print('converged at', len(convergencechecker))
                 break
-        #self.shapleyvalues[p, q] = meandiff
-        #self.shapleylist.append([p,q,meandiff])
-        #print(self.shapleylist)
+        self.shapleyvalues[p, :] = meandiff
 
 
-    def calc_shapleyAll(self, device, steps = 1000):
+    def calc_shapleyAll(self, device, steps, probability = 0.5):
         for p in range(self.nfeatures):
-                Parallel(n_jobs=1)(delayed(self.calc_shapleypq)(p, q, steps, device) for q in range(self.nfeatures))
-                #np.save('results/shapley/shapley_values{}'.format(p), self.shapleylist.cpu().detach().numpy())
-                #np.savetxt('results/shapley/shapley_values{}.csv'.format(p), self.shapleylist.cpu().detach().numpy(),delimiter=',')
+                self.calc_shapleypq(p, steps, device, probability)
+        np.save('results/shapley/shapley_values{}{}'.format(p), self.shapleylist.cpu().detach().numpy())
+        np.savetxt('results/shapley/batched_shapley_values{}{}.csv'.format(p, probability), self.shapleylist.cpu().detach().numpy(),delimiter=',')
