@@ -192,12 +192,14 @@ class Train_env:
         for i in range(n_epochs):
             if i%test_every == 0:
                 print(i)
+                self.net.variational = True
                 self.test_it()
                 print(self.test_result[-1])
                 #plot_results(self.test_result)
             if trainbool:
+                self.net.variational = False
                 self.train_it(lr)
-                tc.save(self.net, 'recursivenet.pt')
+                tc.save(self.net, 'recursivenet1.pt')
 
         #self.test_result = tc.cat(self.test_result, dim = 1)
         #return self.test_result
@@ -229,11 +231,11 @@ class Train_env:
         mse_losses=[]
         for i, (test_target, test_masked_data, Mask) in enumerate(self.testloader):
             test_target, test_masked_data, Mask = test_target.to(self.device), test_masked_data.to(self.device), Mask.to(self.device)
-
+            prediction = test_masked_data.clone()
             repeat_losses = []
             for j in range(self.net.repeats):
                 self.net.to(self.device)
-                prediction, mean_, log_var_ = self.net.recursivenet(test_masked_data, Mask)
+                prediction, mean_, log_var_ = self.net.recursivenet(prediction, Mask)
                 repeat_losses.append(tc.tensor([criterion(prediction[Mask==0], test_target[Mask==0])]))
             mse_losses.append(tc.cat(repeat_losses, dim=0))
 

@@ -8,6 +8,7 @@ import RecursiveNet as RN
 import DataShapley as DS
 import numpy as np
 import DataShapley_allq as DSq
+import DataShapley_allq_specific as DSs
 
 import pandas as pd
 
@@ -16,7 +17,7 @@ ID, data = data_with_names.iloc[:,:2], tc.tensor(data_with_names.iloc[:,2:].valu
 #[print(key, list(ID['Tumor']).count(key)) for key in ID['Tumor'].unique()]    #info
 protein_names = data_with_names.columns[2:]
 
-mode = "DataShapley_allq"
+mode = "RecursiveNet"
 device = tc.device('cpu')
 
 
@@ -68,7 +69,7 @@ elif mode == 'RecursiveNet': # similar to Variational
     train_dist = ((0.1, 0.9))
     test_dist = (0.50)
     activations = [nn.ReLU()]
-    n_epochs = 5000
+    n_epochs = 1
     test_every = 200
     width = 5
     sample_width = 5
@@ -102,4 +103,15 @@ elif mode == 'DataShapley_allq':
     repeats = 4
 
     shapley = DSq.Shapley(data, protein_names, train_env.net)
-    shapley.calc_shapleyAll(steps=1, device=device)
+    shapley.calc_shapleyAll(steps=4000, device=device, probabilities = np.arange(0.1,1,0.1))
+
+
+elif mode == 'DataShapley_allq_specific':
+
+    # make training environment
+    train_env = RN.Train_env(data, load_model=True, device=device)  # use either BoostNet or RecursiveNet
+    # specify and train network
+    repeats = 4
+
+    shapley = DSs.Shapley(data, protein_names, train_env.net)
+    shapley.calc_shapleyAll(steps=4000, device=device, probabilities = np.arange(0.1,1,0.1))

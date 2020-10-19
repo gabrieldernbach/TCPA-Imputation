@@ -62,6 +62,7 @@ class Shapley():
         criterion = F.mse_loss
         proceed = True
         convergencechecker = [0,1] # random numbers
+        counter = tc.ones(self.nfeatures)
         for t in range(1, 1+steps):
             self.shapleyset.getSets()
             for target, masked_data, Set, masked_dataP, SetP in self.shapleyloader:
@@ -71,21 +72,25 @@ class Shapley():
                     pred, predP = self.net(masked_data, Set), self.net(masked_dataP, SetP)
 
                 loss, lossP = criterion(pred, target, reduction = 'none'), criterion(predP, target, reduction = 'none')
+                #print((Set[0,:] == 0).shape) # use for specific shapley loss
+                specific = (Set[0,:] == 0).float()
                 meanloss, meanlossP = loss.mean(dim=0), lossP.mean(dim=0)
-                meandiff = (t - 1) / t * meandiff + 1 / t * (meanloss - meanlossP)
+                meandiff = (counter - 1) / counter * meandiff + specific / counter * (meanloss - meanlossP)
+                counter += specific
                 convergencechecker.append(meandiff)
                 #print(p, meandiff.shape)
+                print(counter)
             if all(abs(convergencechecker[-2] - convergencechecker[-1])<0.0001):
                 print(p, 'converged at', len(convergencechecker))
                 break
         self.shapleyvalues[p, :] = meandiff
         pandasframe = pd.DataFrame(data = {'masked_protein': self.protein_names, 'shapley': meandiff.cpu().detach()})
-        pandasframe.to_csv('results/shapley/batched_shapley_v<alues_{}_{:.2f}_{}_unspecific.csv'.format(self.protein_names[p], probability, len(convergencechecker)-1), index=False)
+        pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], probability, len(convergencechecker)-1), index=False)
         #np.savetxt('results/shapley/batched_shapley_values{}_{}.csv'.format(self.protein_names[p], probability),
         #       pandasframe, delimiter=',')
 
     def calc_shapleyAll(self, device, steps, probabilities):
         for probability in probabilities:
-            Parallel(n_jobs=5)(delayed(self.calc_shapleypq)(p, steps, device, probability) for p in range(self.nfeatures))
+            Parallel(n_jobs=1)(delayed(self.calc_shapleypq)(p, steps, device, probability) for p in range(self.nfeatures))
 
         #np.save('results/shapley/shapley_values{}{}'.format(p), self.shapleylist.cpu().detach().numpy())
