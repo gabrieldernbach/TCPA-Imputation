@@ -199,7 +199,7 @@ class Train_env:
             if trainbool:
                 self.net.variational = False
                 self.train_it(lr)
-                tc.save(self.net, 'recursivenet1.pt')
+                tc.save(self.net, 'recursivenet.pt')
 
         #self.test_result = tc.cat(self.test_result, dim = 1)
         #return self.test_result

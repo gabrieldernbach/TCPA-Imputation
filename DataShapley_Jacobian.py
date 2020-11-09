@@ -9,7 +9,16 @@ import numpy as np
 import random
 from joblib import Parallel, delayed
 from collections import deque
+import torch.autograd.functional.jacobian as jacobian
 
+def get_jacobian(net, x, noutputs):
+    x = x.squeeze()
+    n = x.size()[0]
+    x = x.repeat(noutputs, 1)
+    x.requires_grad_(True)
+    y = net(x)
+    y.backward(torch.eye(noutputs))
+    return x.grad.data
 
 class RunningVariance:
     def __init__(self):
@@ -76,7 +85,7 @@ class Shapley():
         running_variance = RunningVariance()
         criterion = F.mse_loss
         proceed = True
-        convergencechecker = deque([0,1,2,3,4,5,6,7,8,9,10,11,12,13]) # random numbers
+        convergencechecker = deque([0,1,2,3,4,5,6,7,8,9,10]) # random numbers
         convergencecounter = 0
         counter = tc.ones(self.nfeatures).to(device)
         for t in range(1, 1+steps):
@@ -93,7 +102,6 @@ class Shapley():
             prediction_sum[:,q].sum(dim=0).backward()
             gradient = masked_data.grad.mean(dim=0)
             specific = Set.mean(dim=0)
-
             meangrad = (counter - 1) / counter * meangrad + specific / counter * (gradient)
             running_variance.add_value(gradient)
             counter += specific
@@ -101,7 +109,7 @@ class Shapley():
             convergencechecker.popleft()
             convergencecounter += 1
             print(q, meangrad.mean())
-            if all(abs(convergencechecker[-10] - convergencechecker[-1])<0.0001) and all(abs(convergencechecker[-5] - convergencechecker[-1])<0.0001):
+            if all(abs(convergencechecker[-10] - convergencechecker[-1])<0.0001):
                 print(q, 'converged at', convergencecounter)
                 break
         pandasframe = pd.DataFrame(data = {'predicting_protein': self.protein_names, 'gradient': meangrad.cpu().detach(), 'variance': running_variance.variance.detach().cpu()})

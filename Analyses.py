@@ -9,6 +9,7 @@ import DataShapley as DS
 import numpy as np
 import DataShapley_allq as DSq
 import DataShapley_allq_specific as DSs
+import DataShapley_ProteinConcentration as DSpc
 
 import pandas as pd
 
@@ -17,8 +18,9 @@ ID, data = data_with_names.iloc[:,:2], tc.tensor(data_with_names.iloc[:,2:].valu
 #[print(key, list(ID['Tumor']).count(key)) for key in ID['Tumor'].unique()]    #info
 protein_names = data_with_names.columns[2:]
 
-mode = "RecursiveNet"
-device = tc.device('cpu')
+mode = "DataShapley_ProteinConcentration"
+#mode = "RecursiveNet"
+device = tc.device('cuda:0')
 
 
 if mode == "Variational":
@@ -115,3 +117,14 @@ elif mode == 'DataShapley_allq_specific':
 
     shapley = DSs.Shapley(data, protein_names, train_env.net)
     shapley.calc_shapleyAll(steps=4000, device=device, probabilities = np.arange(0.1,1,0.1))
+
+
+elif mode == 'DataShapley_ProteinConcentration':
+
+    # make training environment
+    train_env = RN.Train_env(data, load_model=True, device=device)  # use either BoostNet or RecursiveNet
+    # specify and train network
+    repeats = 4
+
+    shapley = DSpc.Shapley(data, protein_names, train_env.net)
+    shapley.calc_shapleyAll(steps=4, device=device, probabilities = np.arange(0.1,1,0.1))
