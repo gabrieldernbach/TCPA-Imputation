@@ -10,6 +10,7 @@ def bn_linear(input_dim: int, output_dim: int):
         nn.BatchNorm1d(input_dim),
         nn.Linear(input_dim, output_dim, bias=False)
     )
+
 #class ResBlock as smallest Unit
 class ResBlock(nn.Module):
     def __init__(self, input_dim, width,  act_bool, activation=nn.LeakyReLU()):
@@ -26,6 +27,7 @@ class ResBlock(nn.Module):
         )
 
     def forward(self,x):
+        assert tc.is_floating_point(x), 'input is not float'
         residual = x.clone() if self.act_bool else tc.zeros_like(x)
         return residual*self.alpha + self.layers(x)
 
@@ -79,13 +81,15 @@ class GibbsSampler(nn.Module):
         self.result_path = result_path
 
     def forward(self,x, Mask):
-        initial_value = x.clone()
-        mov_avg = tc.zeros_like(x)
         self.results = [0, self.convergence+1] # used to check convergence of Gibbs sampler
         self.single_results=[] # interpred behaviour of gibb sampler
         t=1
         self.neuralnet.to(self.device)
         x = x.to(self.device)
+        mov_avg = tc.zeros_like(x)
+        initial_value = x.clone()
+
+        Mask = Mask.to(self.device)
 
         for i in range(self.max_repeats):
             x, mean_l, log_var_l = self.neuralnet(x)
@@ -102,7 +106,7 @@ class GibbsSampler(nn.Module):
                     break
         return mov_avg
 
-    def train(self, batch_masked, batch_target, Mask, lr, train_repeats = 10):
+    def train(self, batch_masked, batch_target, Mask, lr, train_repeats = 1):
         self.neuralnet.to(self.device).train()
         optimizer = tc.optim.Adam(self.neuralnet.parameters(), lr = lr)
         optimizer.zero_grad()
@@ -136,9 +140,9 @@ class GibbsSampler(nn.Module):
         return result, intermediate_results
 
 def cross_validate(model, data, path, ncrossval=1, proportion = [0.7,0.1, 0.2]):
-    tc.manual_seed(0)
     nsamples, nfeatures = data.shape
-    data = data[tc.randperm(data.shape[0]),:]
+    tc.manual_seed(0)
+    data = data[tc.randperm(data.shape[0]),:] #same as in ShapleySet?
     trainset = ProteinSet(data[:3000,:])
     testset = ProteinSet(data[:3000,:])
     trainloader = DataLoader(trainset, batch_size = 2000, shuffle = True)
