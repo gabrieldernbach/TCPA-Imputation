@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader, random_split
 import random
+import pandas as pd
 
 def bn_linear(input_dim: int, output_dim: int):
     return nn.Sequential(
@@ -28,17 +29,20 @@ class ResBlock(nn.Module):
 
     def forward(self,x):
         assert tc.is_floating_point(x), 'input is not float'
-        residual = x.clone() if self.act_bool else tc.zeros_like(x)
+        residual = x.clone()
         return residual*self.alpha + self.layers(x)
 
 class VAE(nn.Module):
-    def __init__(self, input_dim, width, sample_width, depth, variational=True):
+    def __init__(self, input_dim, width, sample_width, depth, variational=True, nonlinear = True, k=1):
         super(VAE,self).__init__()
-        #specify if Autoencoder is variational
+        #specify if Autoencoder is variational, linear or nonlinear and if IWAE is applied with k iterations
         self.variational = variational
+        self.lin = 'nonlinear' if nonlinear else 'linear'
+        self.activation = nn.LeakyReLU() if nonlinear else nn.Identity()
+        self.k = k
 
         self.encoder = nn.Sequential(
-            *[ResBlock(input_dim, width, act_bool=False) for _ in range(depth)]
+            *[ResBlock(input_dim, width, act_bool=False, activation = self.activation) for _ in range(depth)]
         )
 
         # todo: sample width smaller/larger/equal to width?
@@ -49,10 +53,16 @@ class VAE(nn.Module):
             *[ResBlock(input_dim, width, act_bool=False) for _ in range(depth)]
         )
 
-    def sample(self, mean, log_var):
+    def sample(self, mean, log_var, k=1):
+        #std = tc.exp(0.5 * log_var).repeat(k,1,1)
+        #eps = tc.randn_like(std)
+        #samples = mean + eps*std
+        #results = samples.mean(dim=0)
+
         std = tc.exp(0.5 * log_var)
         eps = tc.randn_like(std)
-        return mean + eps * std
+        results = mean + eps*std
+        return results
 
     def forward(self, x):
         encoding = self.encoder(x)
@@ -61,7 +71,7 @@ class VAE(nn.Module):
         mean_l, log_var_l = self.mean_layer(encoding), self.logvar_layer(encoding)
 
         if self.variational:
-            latent = self.sample(mean_l, log_var_l)
+            latent = self.sample(mean_l, log_var_l, k = self.k)
         else:
             latent = mean_l
 
@@ -82,8 +92,8 @@ class GibbsSampler(nn.Module):
 
     def forward(self,x, Mask):
         self.results = [0, self.convergence+1] # used to check convergence of Gibbs sampler
-        self.single_results=[] # interpred behaviour of gibb sampler
-        t=1
+        self.single_results=[] # interpret behaviour of gibb sampler
+        t=0
         self.neuralnet.to(self.device)
         x = x.to(self.device)
         mov_avg = tc.zeros_like(x)
@@ -99,12 +109,18 @@ class GibbsSampler(nn.Module):
             self.single_results.append(x.detach())
 
             if i > self.warm_up:
+                assert self.warm_up < self.max_repeats, 'max_repeats not higher than warm up, loop does not end'
                 t+=1
-                mov_avg = (t-1/t) * mov_avg + 1/t * x.detach()
+                print(t)
+                mov_avg = ((t-1)/t) * mov_avg + (1/t) * x.detach()
+                print('sum', x.sum(),mov_avg.sum())
                 self.results.append(mov_avg)
                 if tc.all(tc.abs(self.results[-2]-self.results[-1]) < self.convergence):
+                    print('converged at', len(self.results)-2)
                     break
+
         return mov_avg
+
 
     def train(self, batch_masked, batch_target, Mask, lr, train_repeats = 1):
         self.neuralnet.to(self.device).train()
@@ -115,8 +131,8 @@ class GibbsSampler(nn.Module):
         batch_masked, batch_target, Mask = batch_masked.to(self.device), batch_target.to(self.device), Mask.to(self.device)
 
         x = batch_masked.clone()
+        loss = 0
         for i in range(train_repeats):
-            loss = 0
             prediction, mean_, log_var_ = self.neuralnet(x)
             x = tc.where(Mask==1, batch_masked, prediction)
             x.detach_()
@@ -134,29 +150,36 @@ class GibbsSampler(nn.Module):
         mse_losses=[]
         batch_masked, batch_target, Mask = batch_masked.to(self.device), batch_target.to(self.device), Mask.to(self.device)
 
-        result = self.forward(batch_masked, Mask)
-        intermediate_results = [criterion(prediction, batch_target) for prediction in self.single_results if tc.is_tensor(prediction)]
-        print(intermediate_results)
-        return result, intermediate_results
+        endresult = self.forward(batch_masked, Mask)
+        print(criterion(endresult, batch_target))
+        intermediate_singe_results = [criterion(prediction, batch_target) for prediction in self.single_results if tc.is_tensor(prediction)]
+        intermediate_averaged_results =  [criterion(prediction, batch_target) for prediction in self.results if tc.is_tensor(prediction)]
+        return intermediate_averaged_results, intermediate_singe_results
 
-def cross_validate(model, data, path, ncrossval=1, proportion = [0.7,0.1, 0.2]):
+def cross_validate(model, data, path, train_epochs, lr,train_repeats, ncrossval=1, proportion = [0.7,0.1, 0.2]):
+    #todo crossvalidation
     nsamples, nfeatures = data.shape
     tc.manual_seed(0)
-    data = data[tc.randperm(data.shape[0]),:] #same as in ShapleySet?
     trainset = ProteinSet(data[:3000,:])
     testset = ProteinSet(data[:3000,:])
-    trainloader = DataLoader(trainset, batch_size = 2000, shuffle = True)
-    testloader = DataLoader(testset, batch_size = 1000, shuffle = True)
+    trainloader = DataLoader(trainset, batch_size = nsamples, shuffle = True)
+    testloader = DataLoader(testset, batch_size = nsamples, shuffle = True)
 
-    for epoch in range (100):
-        print(epoch)
+    for epoch in range (train_epochs):
+        print('train', epoch)
         for masked_data,target, Mask in trainloader:
-            model.train(masked_data, target, Mask, lr = 0.0001)
-    tc.save(model, self.result_path + '/trained_model/Gibbs_sampler.pt')
+            model.train(masked_data, target, Mask, lr = lr, train_repeats = train_repeats)
+    tc.save(model, path + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(train_epochs, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
 
     for masked_data, target, Mask in testloader:
         with tc.no_grad():
-            model.test(masked_data,target,Mask)
+            averaged_results, single_results = model.test(masked_data,target,Mask)
+            print(len(averaged_results), len(single_results))
+            pandasframe_a = pd.DataFrame({'averages_results': [x.cpu().numpy() for x in averaged_results]})
+            pandasframe_s = pd.DataFrame({'single_results': [x.cpu().numpy() for x in single_results]})
+
+            pandasframe_a.to_csv(path + '/log/average_trainepochs={}_var={}_k={}_{}.pt'.format(train_epochs, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
+            pandasframe_s.to_csv(path + '/log/single_trainepochs={}_var={}_k={}_{}.pt'.format(train_epochs, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
 
 class ProteinSet(Dataset):
     def __init__(self, data):
@@ -178,3 +201,7 @@ class ProteinSet(Dataset):
         masked_data = tc.where(Mask == 1.0, target, random_values)
 
         return masked_data, target, Mask
+
+
+
+
