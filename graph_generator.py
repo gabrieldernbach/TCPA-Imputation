@@ -6,7 +6,7 @@ def LinearGaussian(n_samples: int = 500,
                    sigma_graph: float = 0.5,
                    sigma_noise: float = 0.1,
                    drop_out: float = 0.5,
-                   directed: bool = True,
+                   directed_acyclic: bool = True,
                    ):
     """
     Generate linear gaussian model.
@@ -16,17 +16,19 @@ def LinearGaussian(n_samples: int = 500,
     if sigma_noise < 0:
         raise ValueError(f"sigma_noise must be bigger 0, got {sigma_noise}")
     if drop_out < 0 or drop_out > 1:
-        raise ValueError(f"drop_out mus be in [0, 1], got {drop_out}")
+        raise ValueError(f"drop_out must be in [0, 1], got {drop_out}")
 
     # initialize fully connected graph
     G = np.random.randn(d_dims, d_dims) * sigma_graph
     # generate independent samples (noise terms)
     S = np.random.randn(d_dims, n_samples) * sigma_noise
-
-    # mask with elementwise bernoulli
+    # mask of elementwise bernoulli(p=drop_out)
     M = np.random.uniform(size=(d_dims, d_dims)) > drop_out
-    # remove upper triangle if a directed graph is requested
-    M = np.tril(M) if directed else M
+
+    if directed_acyclic:  # remove cycles
+        M = np.tril(M)
+    else:  # symmetrize graph
+        G = G @ G.T
 
     # get adjacency matrix
     A = M * G
