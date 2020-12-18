@@ -122,7 +122,7 @@ class GibbsSampler(nn.Module):
         return mov_avg
 
 
-    def train(self, batch_masked, batch_target, Mask, lr, train_repeats = 1):
+    def train(self, batch_masked, batch_target, Mask, lr, train_repeats = 5):
         self.neuralnet.to(self.device).train()
         optimizer = tc.optim.Adam(self.neuralnet.parameters(), lr = lr)
         optimizer.zero_grad()
@@ -169,17 +169,18 @@ def cross_validate(model, data, path, train_epochs, lr,train_repeats, ncrossval=
         print('train', epoch)
         for masked_data,target, Mask in trainloader:
             model.train(masked_data, target, Mask, lr = lr, train_repeats = train_repeats)
-    tc.save(model, path + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(train_epochs, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
+        if epoch in [500, 1000, 5000, 10000,15000, 20000, train_epochs]:
+            tc.save(model, path + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
 
-    for masked_data, target, Mask in testloader:
-        with tc.no_grad():
-            averaged_results, single_results = model.test(masked_data,target,Mask)
-            print(len(averaged_results), len(single_results))
-            pandasframe_a = pd.DataFrame({'averages_results': [x.cpu().numpy() for x in averaged_results]})
-            pandasframe_s = pd.DataFrame({'single_results': [x.cpu().numpy() for x in single_results]})
+            for masked_data, target, Mask in testloader:
+                with tc.no_grad():
+                    averaged_results, single_results = model.test(masked_data,target,Mask)
+                    print(len(averaged_results), len(single_results))
+                    pandasframe_a = pd.DataFrame({'averages_results': [x.cpu().numpy() for x in averaged_results]})
+                    pandasframe_s = pd.DataFrame({'single_results': [x.cpu().numpy() for x in single_results]})
 
-            pandasframe_a.to_csv(path + '/log/average_trainepochs={}_var={}_k={}_{}.pt'.format(train_epochs, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
-            pandasframe_s.to_csv(path + '/log/single_trainepochs={}_var={}_k={}_{}.pt'.format(train_epochs, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
+                    pandasframe_a.to_csv(path + '/log/average_trainepochs={}_var={}_k={}_{}.csv'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
+                    pandasframe_s.to_csv(path + '/log/single_trainepochs={}_var={}_k={}_{}.csv'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
 
 class ProteinSet(Dataset):
     def __init__(self, data):

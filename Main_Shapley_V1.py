@@ -1,12 +1,6 @@
 import os
 
 # todo cross validation
-
-#todo save model and test result
-# implement linear model in vae
-# implement importance weighted vae into vae
-# implement non variational into vae
-# implement the last 3 things into cross.validate so that it is saved correctly
 # implement plot
 # implement one hot tumor into vae and cross.validate
 
@@ -15,17 +9,19 @@ import torch as tc
 import pandas as pd
 import model_Shapley_V1 as model
 import shapley_Shapley_V1 as sh
+import plots_Shapley_V1 as plots
 
 #specify hyperparameters
 DATAPATH = '../data2/TCPA_data_sel.csv'
-RESULTPATH = 'results/results' # in RESULTPATH there must be 3 folders: figures, log, trained_model
+RESULTPATH = 'results/results'
 for folder in ('figures', 'log', 'trained_model'):
     if not os.path.exists(RESULTPATH + '/' + folder):
         os.makedirs(RESULTPATH + '/' + folder)
 device = tc.device('cuda:0')
 
-train_network = True
+train_network = False
 calc_shapley = False
+plot = True
 
 #import data from PATH
 data_with_names = pd.read_csv(DATAPATH)
@@ -35,20 +31,25 @@ tc.manual_seed(0)
 randomized_data = data[tc.randperm(data.shape[0]), :].float()
 
 if train_network:
-    #specify neural network
-    vae = model.VAE(input_dim=data.size(1), width=512, sample_width=256, depth=3, variational = False, nonlinear = True, k = 1)
-
-    #init gibb sampler with neural network
-    gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path=RESULTPATH, device = device)
-
-    #train and test model in n fold crossvalidation
-    model.cross_validate(model=gibbs_sampler, data=randomized_data, path = RESULTPATH, train_epochs = 1, lr = 0.001, train_repeats = 1, ncrossval=1)
+    for variational in [True, False]:
+        for nonlinear in [True, False]:
+            for k in [1,10]:
+                #specify neural network
+                vae = model.VAE(input_dim=data.size(1), width=512, sample_width=256, depth=3, variational = True, nonlinear = True, k = 1)
+                #init gibb sampler with neural network
+                gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path=RESULTPATH, device = device)
+                #train and test model in n fold crossvalidation
+                model.cross_validate(model=gibbs_sampler, data=randomized_data, path = RESULTPATH, train_epochs = 20001, lr = 0.0001, train_repeats = 10, ncrossval=1)
 
 if calc_shapley:
     gibbs_sampler = tc.load(RESULTPATH + '/trained_model/Gibbs_sampler.pt') # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = sh.Shapley(gibbs_sampler, data, protein_names, device=device)
     shapley.calc_all(device=device, steps=10000)
+
+
+if plot:
+    plots.plot(RESULTPATH)
 
 
 
