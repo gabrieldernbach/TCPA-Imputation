@@ -1,41 +1,56 @@
 import numpy as np
 
 
-def LinearGaussian(n_samples: int = 500,
-                   d_dims: int = 5,
-                   sigma_graph: float = 0.5,
-                   sigma_noise: float = 0.1,
-                   drop_out: float = 0.5,
-                   directed_acyclic: bool = True,
-                   ):
-    """
-    Generate linear gaussian model.
-    """
-    if sigma_graph < 0:
-        raise ValueError(f"sigma_graph must be bigger 0, got {sigma_graph}")
-    if sigma_noise < 0:
-        raise ValueError(f"sigma_noise must be bigger 0, got {sigma_noise}")
-    if drop_out < 0 or drop_out > 1:
-        raise ValueError(f"drop_out must be in [0, 1], got {drop_out}")
+class LinearGaussian:
+    def __init__(
+            self,
+            d_dims: int = 5,
+            sigma_graph: float = 0.5,
+            sigma_noise: float = 0.1,
+            drop_out: float = 0.5,
+            directed_acyclic: bool = True):
 
-    # initialize fully connected graph
-    G = np.random.randn(d_dims, d_dims) * sigma_graph
-    # generate independent samples (noise terms)
-    S = np.random.randn(d_dims, n_samples) * sigma_noise
-    # mask of elementwise bernoulli(p=drop_out)
-    M = np.random.uniform(size=(d_dims, d_dims)) > drop_out
+        if sigma_graph < 0:
+            raise ValueError(f"sigma_edges must be bigger 0, got {sigma_graph}")
+        if sigma_noise < 0:
+            raise ValueError(f"sigma_nodes must be bigger 0, got {sigma_noise}")
+        if drop_out < 0 or drop_out > 1:
+            raise ValueError(f"drop_out must be in [0, 1], got {drop_out}")
 
-    if directed_acyclic:  # remove cycles
-        M = np.tril(M)
-    else:  # symmetrize graph
-        G = G @ G.T
+        self.d_dims = d_dims
+        self.sigma_graph = sigma_graph
+        self.sigma_noise = sigma_noise
+        self.drop_out = drop_out
+        self.directed_acyclic = directed_acyclic
 
-    # get adjacency matrix
-    A = M * G
-    # transform independent samples by the graph dependency
-    X = A @ S
+        # initialize fully connected graph
+        node_variance = np.random.randn(d_dims, d_dims) * sigma_graph
+        # initialize mask of elementwise bernoulli(p=drop_out)
+        mask = np.random.uniform(size=(d_dims, d_dims)) > drop_out
 
-    return A, X
+        if directed_acyclic:  # ensure dag
+            # constrain to directed graph by setting all upper triangular to zero
+            mask = mask * np.tril(np.ones_like(mask))
+        else:  # ensure cyclic graph
+            node_variance = self.symmetrize(node_variance)
+            mask = self.symmetrize(mask)
+
+        # get adjacency matrix
+        self.adjacency = mask * node_variance
+
+    def symmetrize(self, x):
+        return np.tril(x) + np.tril(x).T + np.diag(np.diag(x))
+
+    def sample(self, n_samples=500):
+        # initialize independent samples (noise terms)
+        sample_variance = np.random.randn(self.d_dims, n_samples) * self.sigma_noise
+        observation = self.adjacency @ sample_variance
+        return observation
 
 
-print(LinearGaussian())
+if __name__ == "__main__":
+    lg = LinearGaussian(d_dims=5, directed_acyclic=False)
+    x = lg.sample(500)
+
+    print(lg.adjacency)
+    print(x)
