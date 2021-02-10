@@ -4,7 +4,7 @@ import numpy as np
 class LinearGaussian:
     def __init__(
             self,
-            d_dims: int = 5,
+            dim: int = 5,
             sigma_graph: float = 0.5,
             sigma_noise: float = 0.1,
             drop_out: float = 0.5,
@@ -17,16 +17,16 @@ class LinearGaussian:
         if drop_out < 0 or drop_out > 1:
             raise ValueError(f"drop_out must be in [0, 1], got {drop_out}")
 
-        self.d_dims = d_dims
+        self.d_dims = dim
         self.sigma_graph = sigma_graph
         self.sigma_noise = sigma_noise
         self.drop_out = drop_out
         self.directed_acyclic = directed_acyclic
 
         # initialize fully connected graph
-        node_variance = np.random.randn(d_dims, d_dims) * sigma_graph
+        node_variance = np.random.randn(dim, dim) * sigma_graph
         # initialize mask of elementwise bernoulli(p=drop_out)
-        mask = np.random.uniform(size=(d_dims, d_dims)) > drop_out
+        mask = np.random.uniform(size=(dim, dim)) > drop_out
 
         if directed_acyclic:  # ensure dag
             # constrain to directed graph by setting all upper triangular to zero
@@ -48,8 +48,9 @@ class LinearGaussian:
         return observation
 
 
+
 if __name__ == "__main__":
-    lg = LinearGaussian(d_dims=5, directed_acyclic=False)
+    lg = LinearGaussian(dim=5, directed_acyclic=False)
     x = lg.sample(500)
 
     print(lg.adjacency)
