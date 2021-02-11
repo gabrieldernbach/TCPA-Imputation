@@ -55,19 +55,18 @@ class VAE(nn.Module):
         x_ = self.dec(z)
         return x_, mu, log_var
 
-    def train_step(self, x0, xn, mask):
+    def train_step(self, x0, xn, missing_mask):
         xn, mu, logvar = self.forward(xn)
-        loss = self.criterion(x0, xn, mu, logvar, mask)
-        # todo: (1)
-        #  ideally this would include resetting masked indices in xn with the
-        #  original values from x0. Also gradients must be freed.
-        #  currently this is performed in the training step post processing in
-        #  the training loop itself
+        loss = self.criterion(x0, xn, mu, logvar, missing_mask)
+
+        # reset original state of observed values
+        xn[~missing_mask] = x0[~missing_mask]
+        xn = xn.detach()
         return xn, loss
 
     @staticmethod
-    def criterion(x0, xn, mu, logvar, mask):
-        mse = F.mse_loss(xn[mask], x0[mask], reduction="sum")
+    def criterion(x0, xn, mu, logvar, missing_mask):
+        mse = F.mse_loss(xn[missing_mask], x0[missing_mask], reduction="sum")
         kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
         return mse + kl
 
@@ -80,16 +79,15 @@ class MissingEntryDataset(Dataset):
 
     def __getitem__(self, idx):
         x0 = self.data[idx]
+        x0 = x0.detach()
 
         prob = np.random.uniform(self.min_missing, self.max_missing)
         mask = np.random.binomial(1, prob, x0.shape)
         mask = torch.tensor(mask).bool()
 
-        # todo:
-        #   Ideally we would already create `xn` where the values
-        #   with active `mask` are set to random.
-        #   However x0 seems to carry gradients!?
-        return x0, mask
+        xn = x0.detach().clone()
+        xn[mask] = torch.randn(mask.shape)[mask]
+        return x0, xn, mask
 
     def __len__(self):
         return len(self.data)
@@ -105,22 +103,14 @@ def main():
 
     for epoch in range(200):
         model.train()
-        for x0, mask in dl:
-            xn = x0.detach().clone()  # todo: why can this not be moved to the dataloader
-            xn[mask] = torch.randn(mask.shape)[mask]
+        for x0, xn, missing_mask in dl:
             for it in range(200):
-                xn, loss = model.train_step(x0, xn, mask)
+                xn, loss = model.train_step(x0, xn, missing_mask)
                 print(loss.item())
 
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-
-                # reset observed values to original state
-                # todo: see (1), this section should go in the model but behaviour of x0 is unexpected
-                xn[~mask] = x0[~mask]
-                xn = xn.detach()
-                x0 = x0.detach()  # todo: why is this even necessary? It is not necessary for model updates
 
 if __name__ == "__main__":
     main()
