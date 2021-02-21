@@ -48,7 +48,6 @@ class LinearGaussian:
         return observation
 
 
-
 if __name__ == "__main__":
     lg = LinearGaussian(dim=5, directed_acyclic=False)
     x = lg.sample(500)

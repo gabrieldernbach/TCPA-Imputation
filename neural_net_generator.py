@@ -1,6 +1,7 @@
 import torch
-from tqdm import tqdm
 import torch.nn as nn
+from tqdm import tqdm
+
 from linear_gaussian_generator import LinearGaussian
 
 

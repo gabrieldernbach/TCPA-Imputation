@@ -1,118 +1,87 @@
-import numpy as np
-from torch.utils.data import Dataset, DataLoader
-
 import torch
-from torch import nn
-import torch.nn.functional as F
+
+from data import Config, Result, Score, get_data_bunch
+from model import VAE
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    datefmt='%Y-%m-%d:%H:%M:%S',
+    format='%(asctime)s %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s'
+)
 
 
-class LinSkip(nn.Module):
-    def __init__(self, dim):
-        super(LinSkip, self).__init__()
-        self.layer = nn.Sequential(
-            nn.Linear(dim, 4 * dim),
-            nn.LeakyReLU(),
-            nn.BatchNorm1d(4 * dim),
-            nn.Linear(4 * dim, dim),
-        )
+class Metrics:
+    """A callback observing training and evaluation."""
 
-    def forward(self, x):
-        return x + self.layer(x)
+    def __init__(self):
+        self.mse = 0.
+        self.r2 = 0.
+        self.loss_avg = 0.
 
+        self.predictions = []
+        self.targets = []
 
-class VAE(nn.Module):
-    def __init__(self, ins=64, hidden=256):
-        super(VAE, self).__init__()
+    def collect(self, prediction, target, loss, idx):
+        self.predictions.append(prediction.detach().cpu().numpy())
+        self.targets.append(target.detach().cpu().numpy())
+        self.loss_avg += (loss.item() - self.loss_avg) / idx
 
-        self.encode = nn.Sequential(
-            nn.Linear(ins, hidden),
-            LinSkip(hidden),
-            LinSkip(hidden),
-            LinSkip(hidden),
-            LinSkip(hidden)
-        )
+    def evaluate(self):
+        predictions = np.concatenate(self.predictions)
+        targets = np.concatenate(self.targets)
 
-        self.mean = LinSkip(hidden)
-        self.log_variance = LinSkip(hidden)
+        self.mse = mean_squared_error(targets, predictions)
+        self.r2 = r2_score(targets, predictions)
+        return Score(loss=self.loss_avg, mse=self.mse, r2=self.r2)
 
-        self.decode = nn.Sequential(
-            LinSkip(hidden),
-            LinSkip(hidden),
-            LinSkip(hidden),
-            LinSkip(hidden),
-            nn.Linear(hidden, ins)
-        )
-
-
-    def sample(self, mean, log_var):
-        std = torch.exp(0.5 * log_var)
-        eps = torch.randn_like(std)
-        return mean + eps * std
-
-    def forward(self, x):
-        h = self.encode(x)
-        mu = self.mean(h)
-        log_var = self.log_variance(h)
-        z = self.sample(mu, log_var)
-        x_ = self.decode(z)
-        return x_, mu, log_var
-
-    def train_step(self, x0, xn, missing_mask):
-        xn, mu, logvar = self.forward(xn)
-        loss = self.criterion(x0, xn, mu, logvar, missing_mask)
-
-        # reset original state of observed values
-        xn[~missing_mask] = x0[~missing_mask]
-        xn = xn.detach()
-        return xn, loss
-
-    @staticmethod
-    def criterion(x0, xn, mu, logvar, missing_mask):
-        mse = F.mse_loss(xn[missing_mask], x0[missing_mask], reduction="sum")
-        kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-        return mse + kl
-
-
-class MissingEntryDataset(Dataset):
-    def __init__(self, data: torch.tensor, min_missing: float, max_missing: float):
-        self.data = data
-        self.min_missing = min_missing
-        self.max_missing = max_missing
-
-    def __getitem__(self, idx):
-        x0 = self.data[idx]
-        x0 = x0.detach()
-
-        prob = np.random.uniform(self.min_missing, self.max_missing)
-        mask = np.random.binomial(1, prob, x0.shape)
-        mask = torch.tensor(mask).bool()
-
-        xn = x0.detach().clone()
-        xn[mask] = torch.randn(mask.shape)[mask]
-        return x0, xn, mask
-
-    def __len__(self):
-        return len(self.data)
+    def clear(self):
+        self.loss_avg = 0.
+        self.predictions = []
+        self.targets = []
 
 
 def main():
-    adjacency, samples = torch.load("dag_nn.pt")
-    ds = MissingEntryDataset(samples, min_missing=0.1, max_missing=0.9)
-    dl = DataLoader(ds, batch_size=64, shuffle=True)
+    cfg = Config
+    data_bunch = get_data_bunch(cfg)
 
-    model = VAE(ins=16)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=0.0001)
+    model = VAE(ins=data_bunch.d_dimension)
+    if cfg.resume:
+        ckpt = torch.load(cfg.resume)
+        model.load_state_dict(ckpt)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
+    metrics = Metrics()
 
-    for epoch in range(200):
+    result = Result()
+    for epoch in range(1, 100):
         model.train()
-        for x0, xn, missing_mask in dl:
-            for it in range(200):
+        loss_monitor = 0
+        metrics.clear()
+        for idx, (x0, xn, missing_mask) in enumerate(data_bunch.train, start=1):
+            for it in range(epoch):
                 xn, loss = model.train_step(x0, xn, missing_mask)
-                print(loss.item())
-
+                loss_monitor = 0.9 * loss_monitor + 0.1 * loss.item()
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
+            metrics.collect(prediction=xn, target=x0, loss=loss, idx=idx)
+            (idx % 10 == 0) and logging.info(f"{loss_monitor=:.13f}")
+
+        result.train = metrics.evaluate()
+        torch.save(model.state_dict(), "ckpt.pt")
+
+        model.eval()
+        metrics.clear()
+        for idx, (x0, xn, missing_mask) in enumerate(data_bunch.dev, start=1):
+            for it in range(epoch):
+                xn, loss = model.eval_step(x0, xn, missing_mask)
+            metrics.collect(prediction=xn, target=x0, loss=loss, idx=idx)
+        result.dev = metrics.evaluate()
+        logging.info(f"{epoch=:3d} {result.train} {result.dev}")
+
 
 if __name__ == "__main__":
     main()
