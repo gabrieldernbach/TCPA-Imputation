@@ -141,12 +141,10 @@ class GibbsSampler(nn.Module):
             else:
                 kl_loss= 0
 
-            loss += criterion(prediction[Mask == 0], batch_target[Mask == 0]) + kl_loss
+            loss = criterion(prediction[Mask == 0], batch_target[Mask == 0]) + kl_loss
 
-
-
-        loss.backward()
-        optimizer.step()
+            loss.backward()
+            optimizer.step()
 
     def test(self, batch_masked, batch_target, Mask):
         self.neuralnet.eval().to(self.device)

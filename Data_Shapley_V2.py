@@ -3,7 +3,11 @@ import pandas as pd
 import torch as tc
 from sklearn import datasets
 import sklearn
-
+from scipy.linalg import block_diag
+import random
+import datetime
+from sklearn.datasets import make_spd_matrix
+import numpy as np
 
 def get_data(dataname):
     if dataname == "protein":
@@ -19,12 +23,12 @@ def get_data(dataname):
         iris,_ = datasets.load_iris(return_X_y=True)
         randomized_data = tc.tensor(sklearn.preprocessing.scale(iris))
 
+    elif dataname == 'boston':
         boston,_ = datasets.load_boston(return_X_y=True)
         randomized_data = tc.tensor(sklearn.preprocessing.scale(boston))
 
     elif dataname == 'breast_cancer':
         breast_cancer,_ = datasets.load_breast_cancer(return_X_y=True)
-        breast_cancer = sklearn.preprocessing.scale(breast_cancer)
         randomized_data = tc.tensor(sklearn.preprocessing.scale(breast_cancer))
 
     elif dataname == 'wine':

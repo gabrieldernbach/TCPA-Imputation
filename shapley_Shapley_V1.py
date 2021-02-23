@@ -9,7 +9,7 @@ class ShapleySet(Dataset):
     # ShapleySet generates the masked data from ground truth data. Two masks are returned, with and without p masked
     def __init__(self, data, p, probability= 0.5):
         self.probability = probability # with 0.5, all combinations of masked and unmasked proteins are equally likely
-        self.data = data[3000:, :]
+        self.data = data
         #tc.manual_seed(random.randint(1,100000)) # set seed for ... delete?
         self.nsamples, self.nfeatures = self.data.shape
         self.R = self.init_randomsample()
@@ -47,8 +47,7 @@ class Shapley:
         self.nsamples, self.nfeatures = data.shape
         self.model = model
         self.model.neuralnet.eval()
-        #self.shapleyvalues = tc.zeros(self.nfeatures, self.nfeatures) # rather save shapley for every protein p in a file?
-        self.protein_names = protein_names
+        self.protein_names = protein_names if protein_names else range(self.nfeatures)
         self.device = device
 
     def calc_shapleypq(self, p, steps, device, probability):
@@ -67,14 +66,12 @@ class Shapley:
         for t in range(1, 1+steps):
             self.shapleyset.getMasks()
             for target, masked_data, Mask, masked_dataP, MaskP in self.shapleyloader:
-                print(Mask) # check if Masks are different every time!
-                print(self.device)
+                #print(Mask) # check if Masks are different every time!
                 target, masked_data, Mask, masked_dataP, MaskP = target.to(device), masked_data.to(device), Mask.to(
                     device), masked_dataP.to(device), MaskP.to(device)
                 #calculate prediction and loss
                 with tc.no_grad():
                     pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
-                    print(pred.type())
 
                 loss, lossP = criterion(pred, target, reduction = 'none'), criterion(predP, target, reduction = 'none')
 
@@ -91,7 +88,6 @@ class Shapley:
                 #break if consequent meanvalues are not different
                 print(p, 'converged at', len(convergencechecker))
                 break
-        #self.shapleyvalues[p, :] = meandiff # rather save shapley for every protein p in a file?
 
         pandasframe = pd.DataFrame(data = {'masked_protein': self.protein_names, 'shapley': meandiff.cpu().detach()})
         pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], probability, len(convergencechecker)-1), index=False)

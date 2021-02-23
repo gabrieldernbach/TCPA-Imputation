@@ -1,15 +1,13 @@
 import os
-
-# todo cross validation
 # implement plot
 # implement one hot tumor into vae and cross.validate
 
 import torch as tc
 import pandas as pd
-import model_Shapley_V1 as model
+import model_Shapley_V2 as model
 import shapley_Shapley_V1 as sh
 import plots_Shapley_V1 as plots
-import Data_Shapley_V1 as data_sh
+import Data_Shapley_V2 as data_sh
 
 #specify hyperparameters
 DATAPATH = '../data2/TCPA_data_sel.csv'
@@ -19,14 +17,18 @@ for folder in ('figures', 'log', 'trained_model'):
         os.makedirs(RESULTPATH + '/' + folder)
 device = tc.device('cuda:0')
 
-train_network = True
-calc_shapley = False
+train_network = False
+##################
+calc_shapley = True
+load_epoch, load_variational, load_k, load_lin = 10, False, 1, 'nonlinear' #define model that shall be loaded for shapley
+##################
 plot = False
 
 randomized_data = data_sh.get_data('breast_cancer')
+protein_names = None
 
 if train_network:
-    for variational in [True]:
+    for variational in [False]:
         for nonlinear in [True]:
             for k in [1]:
                 #specify neural network
@@ -34,15 +36,15 @@ if train_network:
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path=RESULTPATH, device = device)
                 #train and test model in n fold crossvalidation
-                model.cross_validate(model=gibbs_sampler, data=randomized_data, path = RESULTPATH, train_epochs = 10001, lr = 0.00001, train_repeats = 3, ncrossval=1)
+                model.cross_validate(model=gibbs_sampler, data=randomized_data, path = RESULTPATH, train_epochs = 1001, lr = 0.0001, train_repeats = 3, ncrossval=1)
 
 
 
 if calc_shapley:
-    gibbs_sampler = tc.load(RESULTPATH + '/trained_model/Gibbs_sampler.pt') # save and load always gibbs_sampler or model within?
+    gibbs_sampler = tc.load(RESULTPATH + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
-    shapley = sh.Shapley(gibbs_sampler, data, protein_names, device=device)
-    shapley.calc_all(device=device, steps=10000)
+    shapley = sh.Shapley(gibbs_sampler, data = randomized_data, protein_names= protein_names, device=device)
+    shapley.calc_all(device=device, steps=10)
 
 
 if plot:
