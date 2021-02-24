@@ -63,7 +63,7 @@ def main():
     if cfg.resume:
         ckpt = torch.load(cfg.resume)
         model.load_state_dict(ckpt)
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=1e-5)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
     metrics = Metrics()
 
     result = Result()

@@ -7,9 +7,10 @@ class LinSkip(nn.Module):
     def __init__(self, dim):
         super(LinSkip, self).__init__()
         self.layer = nn.Sequential(
+            nn.BatchNorm1d(dim),
             nn.Linear(dim, 4 * dim),
             nn.LeakyReLU(),
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.1),
             nn.BatchNorm1d(4 * dim),
             nn.Linear(4 * dim, dim),
         )
