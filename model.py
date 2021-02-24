@@ -9,6 +9,7 @@ class LinSkip(nn.Module):
         self.layer = nn.Sequential(
             nn.Linear(dim, 4 * dim),
             nn.LeakyReLU(),
+            nn.Dropout(p=0.5),
             nn.BatchNorm1d(4 * dim),
             nn.Linear(4 * dim, dim),
         )
@@ -18,24 +19,12 @@ class LinSkip(nn.Module):
 
 
 class VAE(nn.Module):
-    def __init__(self, ins=64, hidden=256):
+    def __init__(self, dim, depth=4):
         super(VAE, self).__init__()
-        self.enc = nn.Sequential(
-            nn.Linear(ins, hidden),
-            LinSkip(hidden),
-            LinSkip(hidden),
-            LinSkip(hidden),
-            LinSkip(hidden),
-        )
-        self.mean = LinSkip(hidden)
-        self.log_variance = LinSkip(hidden)
-        self.dec = nn.Sequential(
-            LinSkip(hidden),
-            LinSkip(hidden),
-            LinSkip(hidden),
-            LinSkip(hidden),
-            nn.Linear(hidden, ins)
-        )
+        self.enc = nn.Sequential(*[LinSkip(dim) for _ in range(depth)])
+        self.mean = LinSkip(dim)
+        self.log_variance = LinSkip(dim)
+        self.dec = nn.Sequential(*[LinSkip(dim) for _ in range(depth)])
 
     def sample(self, mean, log_var):
         std = torch.exp(0.5 * log_var)
@@ -74,22 +63,13 @@ class VAE(nn.Module):
 
 
 
-# todo:
-#   model that allows for additional categorical input
-#   categorical input has embedding layer, that mapps integers to vector
-#   apply residual skip connections with variational bottleneck
-#   at the end of the skip compare the predictions to each of the
-#   embedding vectors by cosine similarity
-#   use a nll_logit loss to measure how well this was "fixed"
-
 class MixedVAE(nn.Module):
-    def __init__(self, n_proteins, n_classes, embedding_dim=128, depth=4):
+    def __init__(self, d_continuous, d_categories, d_embedding, depth=4):
         super(MixedVAE, self).__init__()
-        self.embedding_dim = embedding_dim
-        self.n_classes = n_classes
-
-        self.dim = n_proteins + embedding_dim
-        self.embedd = nn.Embedding(n_classes, embedding_dim)
+        self.d_continuous = d_continuous
+        self.d_categories = d_categories
+        self.dim = d_continuous + d_embedding
+        self.cat_emb = nn.Parameter(torch.randn((d_categories, d_embedding)))
 
         self.enc = nn.Sequential(*[LinSkip(self.dim) for _ in range(depth)])
         self.mean = LinSkip(self.dim)
@@ -99,39 +79,59 @@ class MixedVAE(nn.Module):
     def sample(self, mean, log_var):
         std = torch.exp(0.5 * log_var)
         eps = torch.randn_like(std)
-        return mean + eps * std
+        return mean + eps * std * 0.005
 
-    def forward(self, proteins, tumor_id):
-        tumor_vec = self.embedd(tumor_id)
-        x = torch.cat([proteins, tumor_vec], dim=1)
+    def forward(self, data):
+        ins = torch.cat([data.xn, data.tne], dim=1)
 
-        x = self.enc(x)
-        mu = self.mean(x)
-        log_var = self.log_variance(x)
+        h = self.enc(ins)
+        mu = self.mean(h)
+        log_var = self.log_variance(h)
         z = self.sample(mu, log_var)
-        x_ = self.dec(z)
+        outs = self.dec(z)
 
+        data.xn = outs[:, :self.d_continuous]
+        data.tne = outs[:, self.d_continuous:]
 
-        return x_, mu, log_var
+        cat_scores = self.cossim(data.tne, self.cat_emb)
+        data.tn = torch.argmax(cat_scores, dim=1)
+        return data, mu, log_var
 
-    def train_step(self, x0, xn, missing_mask):
-        xn, mu, logvar = self.forward(xn)
-        loss = self.criterion(x0, xn, mu, logvar, missing_mask)
+    def train_step(self, data):
+        if not isinstance(data.tne, torch.Tensor):
+            data.tne = self.cat_emb[data.tn[:, 0]]
 
-        # reset values to start value
-        xn[~missing_mask] = x0[~missing_mask]
-        xn = xn.detach()
-        return xn, loss
+        data, mu, logvar = self.forward(data)
+        loss = self.criterion(data, mu, logvar)
 
-    def eval_step(self, x0, xn, missing_mask):
-        with torch.no_grad():
-            xn, mu, logvar = self.forward(xn)
-            loss = self.criterion(x0, xn, mu, logvar, missing_mask)
-        xn[~missing_mask] = x0[~missing_mask]
-        return xn, loss
+        # reset observed x
+        data.xn = data.xn.detach().clone()
+        data.xn[~data.xmask] = data.x0[~data.xmask]
+        # reset observed t
+        data.tne = data.tne.detach().clone()
+        data.tne[~data.tmask.squeeze(1)] = self.cat_emb[data.t0[~data.tmask]]
+        return data, loss
+
+    def eval_step(self, data):
+        if not isinstance(data.tne, torch.Tensor):
+            data.tne = self.cat_emb[data.tn[:, 0]].detach()
+        data, mu, logvar = self.forward(data)
+        loss = self.criterion(data, mu, logvar)
+        data.xn[~data.xmask] = data.x0[~data.xmask]
+        data.tne[~data.tmask.squeeze(1)] = self.cat_emb[data.t0[~data.tmask]]
+        return data, loss
+
+    def criterion(self, data, mu, logvar):
+        cat_scores = self.cossim(data.tne, self.cat_emb)
+        ce = F.nll_loss(cat_scores[data.tmask.squeeze(1)], data.t0[data.tmask], reduction="sum")
+        mse = F.mse_loss(data.xn[data.xmask], data.x0[data.xmask], reduction="sum")
+        kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+        return kl + mse + ce
 
     @staticmethod
-    def criterion(x0, xn, mu, logvar, missing_mask):
-        mse = F.mse_loss(xn[missing_mask], x0[missing_mask], reduction="sum")
-        kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-        return mse + kl
+    def cossim(a, b):  # for illustration set a (64 x 128), b (17 x 128)
+        inner = torch.einsum("ik, jk -> ij", a, b)  # 64 x 17
+        Za = torch.sqrt(a**2).sum(dim=1)  # 64
+        Zb = torch.sqrt(b**2).sum(dim=1)  # 17
+        Z = Za[:, None] @ Zb[None, :]  # 64 x 17
+        return inner / Z  # 64 x 17

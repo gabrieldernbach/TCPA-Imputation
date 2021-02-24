@@ -1,11 +1,11 @@
-import torch
-
-from data import Config, Result, Score, get_data_bunch
-from model import VAE
-from sklearn.metrics import mean_squared_error, r2_score
-import numpy as np
-
 import logging
+
+import numpy as np
+import torch
+from sklearn.metrics import mean_squared_error, explained_variance_score, balanced_accuracy_score
+
+from data import Config, Result, Score, Record, get_data_bunch
+from model import MixedVAE
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,25 +18,31 @@ class Metrics:
     """A callback observing training and evaluation."""
 
     def __init__(self):
-        self.mse = 0.
-        self.r2 = 0.
         self.loss_avg = 0.
+        self.xn = []
+        self.x0 = []
+        self.t0 = []
+        self.tn = []
 
-        self.predictions = []
-        self.targets = []
-
-    def collect(self, prediction, target, loss, idx):
-        self.predictions.append(prediction.detach().cpu().numpy())
-        self.targets.append(target.detach().cpu().numpy())
+    def collect(self, data: Record, loss, idx):
+        free = lambda x: x.detach().cpu().numpy()
+        self.xn.append(free(data.xn))
+        self.x0.append(free(data.x0))
+        self.tn.append(free(data.tn))
+        self.t0.append(free(data.t0))
         self.loss_avg += (loss.item() - self.loss_avg) / idx
 
     def evaluate(self):
-        predictions = np.concatenate(self.predictions)
-        targets = np.concatenate(self.targets)
+        xn = np.concatenate(self.xn)
+        x0 = np.concatenate(self.x0)
+        tn = np.concatenate(self.tn)
+        t0 = np.concatenate(self.t0)
 
-        self.mse = mean_squared_error(targets, predictions)
-        self.r2 = r2_score(targets, predictions)
-        return Score(loss=self.loss_avg, mse=self.mse, r2=self.r2)
+        mse = mean_squared_error(x0, xn)
+        ev = explained_variance_score(x0, xn)
+        bac = balanced_accuracy_score(t0, tn)
+
+        return Score(loss=self.loss_avg, mse=mse, ev=ev, bac=bac)
 
     def clear(self):
         self.loss_avg = 0.
@@ -48,7 +54,12 @@ def main():
     cfg = Config
     data_bunch = get_data_bunch(cfg)
 
-    model = VAE(ins=data_bunch.d_dimension)
+    model = MixedVAE(
+        d_continuous=189,
+        d_categories=16,
+        d_embedding=128,
+        depth=4,
+    )
     if cfg.resume:
         ckpt = torch.load(cfg.resume)
         model.load_state_dict(ckpt)
@@ -58,27 +69,26 @@ def main():
     result = Result()
     for epoch in range(1, 100):
         model.train()
-        loss_monitor = 0
         metrics.clear()
-        for idx, (x0, xn, missing_mask) in enumerate(data_bunch.train, start=1):
+        for idx, data in enumerate(data_bunch.train, start=1):
+            data = Record(**data)
             for it in range(epoch):
-                xn, loss = model.train_step(x0, xn, missing_mask)
-                loss_monitor = 0.9 * loss_monitor + 0.1 * loss.item()
+                data, loss = model.train_step(data)
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-            metrics.collect(prediction=xn, target=x0, loss=loss, idx=idx)
-            (idx % 10 == 0) and logging.info(f"{loss_monitor=:.13f}")
+            metrics.collect(data=data, loss=loss, idx=idx)
 
         result.train = metrics.evaluate()
         torch.save(model.state_dict(), "ckpt.pt")
 
         model.eval()
         metrics.clear()
-        for idx, (x0, xn, missing_mask) in enumerate(data_bunch.dev, start=1):
+        for idx, data in enumerate(data_bunch.dev, start=1):
+            data = Record(**data)
             for it in range(epoch):
-                xn, loss = model.eval_step(x0, xn, missing_mask)
-            metrics.collect(prediction=xn, target=x0, loss=loss, idx=idx)
+                xn, loss = model.eval_step(data)
+            metrics.collect(data=data, loss=loss, idx=idx)
         result.dev = metrics.evaluate()
         logging.info(f"{epoch=:3d} {result.train} {result.dev}")
 
