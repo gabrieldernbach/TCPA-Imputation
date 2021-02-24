@@ -1,13 +1,8 @@
-import os
 import pandas as pd
+import sklearn
 import torch as tc
 from sklearn import datasets
-import sklearn
-from scipy.linalg import block_diag
-import random
-import datetime
-from sklearn.datasets import make_spd_matrix
-import numpy as np
+
 
 def get_data(dataname):
     if dataname == "protein":
@@ -35,4 +30,13 @@ def get_data(dataname):
         wine,_ = datasets.load_wine(return_X_y=True)
         randomized_data = tc.tensor(sklearn.preprocessing.scale(wine))
 
+
+    elif dataname == 'four_groups':
+        import four_groups
+        data = four_groups.art_train
+        meanv = data.mean(axis=0)[None,:]
+        stdv = data.std(axis=0)[None,:]
+        print(meanv.shape, stdv.shape)
+        randomized_data = tc.tensor((data - meanv)/stdv)
     return randomized_data
+
