@@ -30,6 +30,20 @@ def get_data(dataname):
         wine,_ = datasets.load_wine(return_X_y=True)
         randomized_data = tc.tensor(sklearn.preprocessing.scale(wine))
 
+    elif dataname == 'dag_nn0':
+        adjacency, randomized_data = tc.load("data/dag_nn_0.pt")
+
+    elif dataname == 'dag_nn1':
+        adjacency, randomized_data = tc.load("data/dag_nn_1.pt")
+
+    elif dataname == 'dag_nn2':
+        adjacency, randomized_data = tc.load("data/dag_nn_2.pt")
+
+    elif dataname == 'dag_nn3':
+        adjacency, randomized_data = tc.load("data/dag_nn_3.pt")
+
+    elif dataname == 'dag_nn4':
+        adjacency, randomized_data = tc.load("data/dag_nn_4.pt")
 
     elif dataname == 'four_groups':
         import four_groups
@@ -38,5 +52,10 @@ def get_data(dataname):
         stdv = data.std(axis=0)[None,:]
         print(meanv.shape, stdv.shape)
         randomized_data = tc.tensor((data - meanv)/stdv)
+
     return randomized_data
 
+
+if __name__ == "__main__":
+    data = get_data("dag_nn")
+    breakpoint()
