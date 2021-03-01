@@ -1,4 +1,5 @@
 import numpy as np
+from sklearn.model_selection import StratifiedKFold
 import pandas as pd
 import torch
 from torch.utils.data import Dataset, DataLoader
@@ -7,20 +8,20 @@ from dataclasses import dataclass, asdict
 
 
 class MixedMissingEntryDataset(Dataset):
-    def __init__(self, proteins, tumortype, min_missing, max_missing):
-        self.proteins = proteins.detach().float()
-        self.tumortype = tumortype.detach().long()
+    def __init__(self, x, t, min_missing, max_missing):
+        self.x = x.detach().float()
+        self.t = t.detach().long()
         #  in an unfortunate event, self.tumortype.max()
-        #  could return less classes as there are in the total dataset,
-        #  when the subset is indeed lacking a class.
+        #  could return less classes as there are across the splits
+        #  when the specific split is indeed lacking a class.
         #  This should be protected by a stratified split.
-        self.n_classes = self.tumortype.max() + 1
+        self.n_classes = self.t.max() + 1
         self.min_missing = min_missing
         self.max_missing = max_missing
 
     def __getitem__(self, idx):
         # get original `x0` and imputed `xn` proteins
-        x0 = self.proteins[idx]
+        x0 = self.x[idx]
         prob = np.random.uniform(self.min_missing, self.max_missing)
         xmask = np.random.binomial(1, prob, x0.shape)
         xmask = torch.tensor(xmask, dtype=torch.bool).detach()
@@ -28,17 +29,18 @@ class MixedMissingEntryDataset(Dataset):
         xn[xmask] = torch.randn(xmask.shape, dtype=torch.float)[xmask]
 
         # get original `t0` and imputed `tn` tumortypes
-        t0 = self.tumortype[idx]
+        t0 = self.t[idx]
         tmask = (torch.rand(1) > 0.5).detach()
         tn = t0.clone()
         if tmask:
             tn = torch.randint(0, self.n_classes, size=(1,))
+        tne = torch.tensor([])
 
-        record = Record(x0=x0, xn=xn, xmask=xmask, t0=t0, tn=tn, tne=[], tmask=tmask)
+        record = Record(x0=x0, xn=xn, xmask=xmask, t0=t0, tn=tn, tne=tne, tmask=tmask)
         return asdict(record)
 
     def __len__(self):
-        return len(self.proteins)
+        return len(self.x)
 
 
 class Normalizer:
@@ -60,10 +62,24 @@ class Normalizer:
         return self.transform(data)
 
 
-def split(df, frac, seed):
-    inside = df.sample(frac=frac, random_state=seed)
-    outside = df.drop(inside.index)
-    return inside, outside
+def split(df, col="target", frac=0.60, seed=0):
+    """stratified split along col='target'"""
+    grouped = df.groupby(col, group_keys=False)
+    collect = []
+    for name, group in grouped:
+        inside = group.sample(frac=frac, random_state=seed)
+        outside = group.drop(inside.index)
+        collect.append((inside, outside))
+    ins, outs = [pd.concat(f) for f in zip(*collect)]
+    return ins, outs
+
+
+def add_cv_col(df):
+    df["cv"] = None
+    skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
+    for idx, (_, test_idx) in enumerate(skf.split(df, df.target)):
+        df.loc[test_idx, "cv"] = idx
+    return df
 
 
 def wrap_loader(proteins, tumortype, cfg):
@@ -79,22 +95,25 @@ def wrap_loader(proteins, tumortype, cfg):
         dataset,
         batch_size=cfg.batch_size,
         pin_memory=True,
-        num_workers=0,
+        num_workers=cfg.num_worker,
         shuffle=True,
+        drop_last=False,
     )
     return dataloader
 
 
 def dataframe2databunch(df, cfg):
-    train, rest = split(df, frac=0.7, seed=cfg.seed)
-    dev, test = split(rest, frac=0.5, seed=cfg.seed)
+    df = add_cv_col(df)
+    test = df[df.cv == cfg.seed].drop(columns="cv")
+    rest = df[df.cv != cfg.seed].drop(columns="cv")
+    train, dev = split(rest, frac=0.8, seed=cfg.seed)
 
-    train_proteins = np.array(train.loc[:, train.columns != "Tumor"])
-    train_tumortype = np.array(train.loc[:, train.columns == "Tumor"])
-    dev_proteins = np.array(dev.loc[:, dev.columns != "Tumor"])
-    dev_tumortype = np.array(dev.loc[:, dev.columns == "Tumor"])
-    test_proteins = np.array(test.loc[:, test.columns != "Tumor"])
-    test_tumortype = np.array(test.loc[:, test.columns == "Tumor"])
+    train_proteins = np.array(train.loc[:, train.columns != "target"])
+    train_tumortype = np.array(train.loc[:, train.columns == "target"])
+    dev_proteins = np.array(dev.loc[:, dev.columns != "target"])
+    dev_tumortype = np.array(dev.loc[:, dev.columns == "target"])
+    test_proteins = np.array(test.loc[:, test.columns != "target"])
+    test_tumortype = np.array(test.loc[:, test.columns == "target"])
 
     normalizer = Normalizer()
     train_proteins = normalizer.fit_transform(train_proteins)
@@ -114,15 +133,9 @@ def dataframe2databunch(df, cfg):
 
 
 def task_tcpa():
-    # ideally this would have one mode including the tumor_type
-    # and another mode with only the protein data
     df = pd.read_csv("TCPA_data_sel.csv")
-    # onehot = pd.get_dummies(df.Tumor, prefix="Tumor")
-    # df = pd.concat([df, onehot], axis=1)
-    # df = df.drop(columns=["ID", "Tumor"])
-    df["Tumor"] = df.Tumor.astype("category")
-    df["Tumor"] = df.Tumor.cat.codes
-    df = df.drop(columns=["ID"])
+    df["target"] = df.Tumor.astype("category").cat.codes
+    df = df.drop(columns=["ID", "Tumor"])
     return df
 
 
@@ -148,6 +161,16 @@ class Record:
     xmask: torch.tensor  # mask of which xn are imputed
     tmask: torch.tensor  # mask of which tn are imputed
 
+    def to(self, device):
+        self.x0 = self.x0.to(device)
+        self.xn = self.xn.to(device)
+        self.t0 = self.t0.to(device)
+        self.tn = self.tn.to(device)
+        self.tne = self.tne.to(device)
+        self.xmask = self.xmask.to(device)
+        self.tmask = self.tmask.to(device)
+        return self
+
 
 @dataclass(frozen=True)
 class DataBunch:
@@ -160,9 +183,12 @@ class DataBunch:
 @dataclass(frozen=True)
 class Config:
     seed: int = 0
-    batch_size: int = 64
+    batch_size: int = 4096
+    num_worker: int = 32
     epochs: int = 300
-    resume: str = None # "ckpt.pt"
+    resume: str = "ckpt.pt" #None # "ckpt.pt"
+    device: str = "cuda"
+    mixed_precision: bool = True
 
 
 @dataclass(frozen=True)

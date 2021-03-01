@@ -78,9 +78,11 @@ class MixedVAE(nn.Module):
         self.dec = nn.Sequential(*[LinSkip(self.dim) for _ in range(depth)])
 
     def sample(self, mean, log_var):
-        std = torch.exp(0.5 * log_var)
+        # std =  torch.exp(0.5 * log_var)
+        std = F.softplus(log_var)
         eps = torch.randn_like(std)
-        return mean + eps * std * 0.005
+        smp = mean + eps * std
+        return torch.clamp(smp, min=-20, max=+20)
 
     def forward(self, data):
         ins = torch.cat([data.xn, data.tne], dim=1)
@@ -90,6 +92,7 @@ class MixedVAE(nn.Module):
         log_var = self.log_variance(h)
         z = self.sample(mu, log_var)
         outs = self.dec(z)
+        assert not torch.isnan(outs).any()
 
         data.xn = outs[:, :self.d_continuous]
         data.tne = outs[:, self.d_continuous:]
@@ -99,7 +102,7 @@ class MixedVAE(nn.Module):
         return data, mu, log_var
 
     def train_step(self, data):
-        if not isinstance(data.tne, torch.Tensor):
+        if data.tne.shape[1] == 0:
             data.tne = self.cat_emb[data.tn[:, 0]]
 
         data, mu, logvar = self.forward(data)
@@ -114,25 +117,27 @@ class MixedVAE(nn.Module):
         return data, loss
 
     def eval_step(self, data):
-        if not isinstance(data.tne, torch.Tensor):
+        if data.tne.shape[1] == 0:
             data.tne = self.cat_emb[data.tn[:, 0]].detach()
         data, mu, logvar = self.forward(data)
         loss = self.criterion(data, mu, logvar)
+
+        # reset observed x
         data.xn[~data.xmask] = data.x0[~data.xmask]
+        # reset obsered t
         data.tne[~data.tmask.squeeze(1)] = self.cat_emb[data.t0[~data.tmask]]
         return data, loss
 
     def criterion(self, data, mu, logvar):
         cat_scores = self.cossim(data.tne, self.cat_emb)
-        ce = F.nll_loss(cat_scores[data.tmask.squeeze(1)], data.t0[data.tmask], reduction="sum")
+        ce = F.cross_entropy(cat_scores[data.tmask.squeeze(1)], data.t0[data.tmask], reduction="sum")
         mse = F.mse_loss(data.xn[data.xmask], data.x0[data.xmask], reduction="sum")
         kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
         return kl + mse + ce
 
     @staticmethod
     def cossim(a, b):  # for illustration set a (64 x 128), b (17 x 128)
-        inner = torch.einsum("ik, jk -> ij", a, b)  # 64 x 17
-        Za = torch.sqrt(a**2).sum(dim=1)  # 64
-        Zb = torch.sqrt(b**2).sum(dim=1)  # 17
-        Z = Za[:, None] @ Zb[None, :]  # 64 x 17
-        return inner / Z  # 64 x 17
+        a_normed = a / torch.sqrt(torch.sum(a**2, dim=1, keepdim=True))
+        b_normed = b / torch.sqrt(torch.sum(b**2, dim=1, keepdim=True))
+        inner = torch.einsum("ik, jk -> ij", a_normed, b_normed)  # 64 x 17
+        return inner

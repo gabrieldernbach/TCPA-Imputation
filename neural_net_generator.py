@@ -42,7 +42,7 @@ class Node(nn.Module):
     def forward(self, x):
         x_ = self.listen * x
         o = self.layer(x_)
-        o += torch.rand(o.shape) * 2 - 1
+        o += (torch.rand(o.shape) * 2 - 1) * self.noise
         return o
 
 
@@ -54,23 +54,25 @@ def sample_graph(nodes, n_samples):
 
 
 def main():
-    # todo:
-    #   limit the graph to a certain degree or use generators from networkx
-    #   https://networkx.org/documentation/stable/reference/generators.html
-    #   for an overview of practically relevant graphs
-    #   https://epubs.siam.org/doi/pdf/10.1137/S003614450342480?xid=PS_smithsonian&
-    #   for now, use the linear gaussian generator
-    dim = 16
-    n_samples = 500
-    lg = LinearGaussian(dim=dim, directed_acyclic=True)
+    for i in range(5):
+        # todo:
+        #   limit the graph to a certain degree or use generators from networkx
+        #   https://networkx.org/documentation/stable/reference/generators.html
+        #   for an overview of practically relevant graphs
+        #   https://epubs.siam.org/doi/pdf/10.1137/S003614450342480?xid=PS_smithsonian&
+        #   for now, use the linear gaussian generator
+        dim = 32
+        n_samples = 80000
+        lg = LinearGaussian(dim=dim, directed_acyclic=True)
 
-    # create topologically ordered network
-    adjacency = torch.tensor(lg.adjacency != 0)
-    noise = torch.randn(dim) ** 2
-    nodes = [Node(dim, a, n) for a, n in zip(adjacency, noise)]
-    observations = sample_graph(nodes, n_samples)
+        # create topologically ordered network
+        adjacency = torch.tensor(lg.adjacency != 0)
+        noise = torch.randn(dim) ** 2
+        with torch.no_grad():
+            nodes = [Node(dim, a, n) for a, n in zip(adjacency, noise)]
+            observations = sample_graph(nodes, n_samples)
 
-    torch.save((adjacency, observations), "dag_nn.pt")
+        torch.save((adjacency, observations), f"dag_nn_{i}.pt")
 
 
 if __name__ == "__main__":
