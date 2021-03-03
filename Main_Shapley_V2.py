@@ -28,7 +28,7 @@ load_epoch, load_variational, load_k, load_lin = 500, False, 1, 'nonlinear' #def
 ##################
 plot = False
 
-train_set, test_set = data_sh.get_data('four_groups_different')
+train_set, test_set = data_sh.get_data('nn_data')
 print(train_set.shape)
 
 protein_names = None
