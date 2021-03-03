@@ -79,7 +79,7 @@ class VAE(nn.Module):
 
 # wrapper for VAE: repeatedly maps protein data with VAE on correct protein data. between repeats known data is initialized again as ground truth
 class GibbsSampler(nn.Module):
-    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 30, device = 'cpu'):
+    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 10, device = 'cpu'):
         super(GibbsSampler,self).__init__()
         self.neuralnet = neuralnet # VAE or other module
         self.warm_up = warm_up # first repeats are discarded
@@ -159,13 +159,12 @@ class GibbsSampler(nn.Module):
         intermediate_averaged_results =  [criterion(prediction[Mask==0], batch_target[Mask==0]) for prediction in self.results if tc.is_tensor(prediction)]
         return intermediate_averaged_results, intermediate_singe_results
 
-def cross_validate(model, data, path, train_epochs, lr,train_repeats, ncrossval=1, proportion = [0.7,0.1, 0.2]):
+def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_repeats, ncrossval=1, proportion = [0.7,0.1, 0.2]):
     #todo crossvalidation
-    nsamples, nfeatures = data.shape
+    nsamples, nfeatures = train_data.shape
     tc.manual_seed(0)
-    nsamples, nfeatures = data.shape
-    trainset = ProteinSet(data[:nsamples//2,:])
-    testset = ProteinSet(data[nsamples//2:,:])
+    trainset = ProteinSet(train_data)
+    testset = ProteinSet(test_data)
     trainloader = DataLoader(trainset, batch_size = nsamples, shuffle = True)
     testloader = DataLoader(testset, batch_size = nsamples, shuffle = True)
 
@@ -173,7 +172,7 @@ def cross_validate(model, data, path, train_epochs, lr,train_repeats, ncrossval=
 
         for masked_data,target, Mask in trainloader:
             model.train(masked_data, target, Mask, lr = lr, train_repeats = train_repeats)
-        if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 1000, 5000, 10000,15000, 20000, train_epochs]:
+        if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 1000, 2000, 3000, 4000, 5000, 10000,15000, 20000, train_epochs]:
             print('trained', epoch)
             tc.save(model, path + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
 

@@ -2,7 +2,7 @@ import pandas as pd
 import sklearn
 import torch as tc
 from sklearn import datasets
-
+from sklearn.utils import shuffle
 
 def get_data(dataname):
     if dataname == "protein":
@@ -53,7 +53,21 @@ def get_data(dataname):
         print(meanv.shape, stdv.shape)
         randomized_data = tc.tensor((data - meanv)/stdv)
 
-    return randomized_data
+
+    elif dataname == 'four_groups_different':
+        import four_groups_different
+        data, labels = four_groups_different.art_train, four_groups_different.labels
+        meanv = data.mean(axis=0)[None,:]
+        stdv = data.std(axis=0)[None,:]
+        print(meanv.shape, stdv.shape)
+        randomized_data, labels = shuffle(((data - meanv)/stdv), labels)
+        randomized_data = tc.tensor(randomized_data)
+
+        pandasframe = pd.DataFrame({'labels': labels[randomized_data.size(0)//2:]})
+        pandasframe.to_csv('results/singlesample_shapley/labels/labels.csv')
+
+    train_set, test_set = randomized_data[:randomized_data.size(0)//2,:], randomized_data[randomized_data.size(0)//2:,:]
+    return train_set, test_set
 
 
 if __name__ == "__main__":
