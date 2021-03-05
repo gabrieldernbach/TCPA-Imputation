@@ -29,12 +29,14 @@ class LinSkip(nn.Module):
 class Node(nn.Module):
     def __init__(self, ins: int, adjacency: torch.tensor, noise: float):
         super(Node, self).__init__()
-        dim = 256
+        dim = 1
         self.layer = nn.Sequential(
-            LinSkip(ins, dim, "lrelu"),
-            LinSkip(dim, dim, "lrelu"),
-            LinSkip(dim, dim, "lrelu"),
-            LinSkip(dim, 1, "linear"),
+            #LinSkip(ins, dim, "lrelu"),
+            #LinSkip(dim, dim, "lrelu"),
+            #LinSkip(dim, dim, "lrelu"),
+            #LinSkip(dim, 1, "linear"),
+            LinSkip(ins, 1, "linear"),
+
         )
         self.listen = adjacency  # boolean mask indicating who to listen to
         self.noise = noise  # scaling uniform output noise
@@ -42,7 +44,7 @@ class Node(nn.Module):
     def forward(self, x):
         x_ = self.listen.float() * x
         o = self.layer(x_)
-        o += (torch.rand(o.shape) * 2 - 1) * self.noise
+        o += (torch.rand(o.shape) * 2 - 1) #* self.noise
         return o
 
 
@@ -61,8 +63,8 @@ def get_data(seed=0):
     #   for an overview of practically relevant graphs
     #   https://epubs.siam.org/doi/pdf/10.1137/S003614450342480?xid=PS_smithsonian&
     #   for now, use the linear gaussian generator
-    dim = 32
-    n_samples = 8000
+    dim = 8
+    n_samples = 2000
     lg = LinearGaussian(dim=dim, directed_acyclic=True)
 
     # create topologically ordered network

@@ -3,7 +3,6 @@ import sklearn
 import torch as tc
 from sklearn import datasets
 from sklearn.utils import shuffle
-import Neural_net_generator as Ng
 import numpy as np
 
 def get_data(dataname):
@@ -55,17 +54,29 @@ def get_data(dataname):
 
 
     elif dataname == 'nn_data':
+        import Neural_net_generator as Ng
         adjacency, data = Ng.get_data()
         meanv, sdv = data.mean(axis=0, keepdim=True), data.std(axis=0, keepdim=True)
         ordered_data = (data - meanv) / sdv
         randomized_data = ordered_data[tc.randperm(ordered_data.shape[0]),:]
+        np.savetxt("results/shapley/adjacency/adjacency.csv", np.array(adjacency), delimiter=",")
+        np.savetxt("results/data/data.csv", np.array(randomized_data), delimiter=",")
 
+    elif dataname == 'custom':
+        import custom_network as cn
+        adjacency, function, data = cn.adjacency , cn.function, cn.use_data
+        meanv, sdv = data.mean(axis=0, keepdim=True), data.std(axis=0, keepdim=True)
+        ordered_data = (data - meanv) / sdv
+        randomized_data = ordered_data[tc.randperm(ordered_data.shape[0]),:]
+        np.savetxt("results/shapley/adjacency/adjacency.csv", np.array(adjacency), delimiter=",")
+        np.savetxt("results/shapley/adjacency/adjacency.csv", np.array(adjacency), delimiter=",")
+        np.savetxt("results/shapley/adjacency/function.csv", np.array(function), delimiter=",")
+
+        np.savetxt("results/data/data.csv", np.array(randomized_data), delimiter=",")
 
     train_set, test_set = randomized_data[:randomized_data.size(0)//2,:], randomized_data[randomized_data.size(0)//2:,:]
 
     return train_set, test_set
-
-
 
 
 if __name__ == "__main__":

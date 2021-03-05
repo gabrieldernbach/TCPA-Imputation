@@ -22,7 +22,7 @@ class ResBlock(nn.Module):
         self.layers = nn.Sequential(
             bn_linear(input_dim, width),
             activation,
-            nn.Dropout(p=0.1),
+            nn.Dropout(p=0.05),
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
@@ -154,7 +154,7 @@ class GibbsSampler(nn.Module):
         batch_masked, batch_target, Mask = batch_masked.to(self.device), batch_target.to(self.device), Mask.to(self.device)
 
         endresult = self.forward(batch_masked, Mask)
-        print(criterion(endresult, batch_target))
+        #print(criterion(endresult, batch_target))
         intermediate_singe_results = [criterion(prediction, batch_target) for prediction in self.single_results if tc.is_tensor(prediction)]
         intermediate_averaged_results =  [criterion(prediction[Mask==0], batch_target[Mask==0]) for prediction in self.results if tc.is_tensor(prediction)]
         return intermediate_averaged_results, intermediate_singe_results
@@ -172,19 +172,25 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
 
         for masked_data,target, Mask in trainloader:
             model.train(masked_data, target, Mask, lr = lr, train_repeats = train_repeats)
-        if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 1000, 2000, 3000, 4000, 5000, 10000,15000, 20000, train_epochs]:
+        if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 10000,15000, 20000, train_epochs]:
             print('trained', epoch)
             tc.save(model, path + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
 
             for masked_data, target, Mask in testloader:
                 with tc.no_grad():
                     averaged_results, single_results = model.test(masked_data,target,Mask)
-                    print(averaged_results[-1], single_results[-1])
+                    print('test_loss', averaged_results[-1], single_results[-1])
                     pandasframe_a = pd.DataFrame({'averages_results': [x.cpu().numpy() for x in averaged_results]})
                     pandasframe_s = pd.DataFrame({'single_results': [x.cpu().numpy() for x in single_results]})
 
                     pandasframe_a.to_csv(path + '/log/average_trainepochs={}_var={}_k={}_{}.csv'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
                     pandasframe_s.to_csv(path + '/log/single_trainepochs={}_var={}_k={}_{}.csv'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
+
+            for masked_data, target, Mask in trainloader:
+                with tc.no_grad():
+                    averaged_results_train, single_results_train = model.test(masked_data,target,Mask)
+                    print('train_loss', averaged_results_train[-1], single_results_train[-1])
+
 
 class ProteinSet(Dataset):
     def __init__(self, data):

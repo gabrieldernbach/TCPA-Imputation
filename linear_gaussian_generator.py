@@ -7,7 +7,7 @@ class LinearGaussian:
             dim: int = 5,
             sigma_graph: float = 0.5,
             sigma_noise: float = 0.1,
-            drop_out: float = 0.5,
+            drop_out: float = 0.9,
             directed_acyclic: bool = True):
 
         if sigma_graph < 0:
