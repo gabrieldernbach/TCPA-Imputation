@@ -44,7 +44,10 @@ class Node(nn.Module):
     def forward(self, x):
         x_ = self.listen.float() * x
         o = self.layer(x_)
-        o += (torch.rand(o.shape) * 2 - 1) #* self.noise
+        if torch.all(x==0):
+            o += (torch.rand(o.shape) * 2 - 1) * self.noise
+        else:
+            o += 0.01* (torch.rand(o.shape) * 2 - 1) * self.noise
         return o
 
 
@@ -64,7 +67,7 @@ def get_data(seed=0):
     #   https://epubs.siam.org/doi/pdf/10.1137/S003614450342480?xid=PS_smithsonian&
     #   for now, use the linear gaussian generator
     dim = 8
-    n_samples = 2000
+    n_samples = 4000
     lg = LinearGaussian(dim=dim, directed_acyclic=True)
 
     # create topologically ordered network

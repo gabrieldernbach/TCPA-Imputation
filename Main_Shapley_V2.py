@@ -29,7 +29,7 @@ load_epoch, load_variational, load_k, load_lin = 1000, False, 1, 'nonlinear' #de
 ##################
 plot = False
 
-train_set, test_set = data_sh.get_data('custom')
+train_set, test_set = data_sh.get_data('nn_data')
 
 print(train_set.shape)
 
@@ -44,14 +44,14 @@ if train_network:
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path=RESULTPATH, device = device)
                 #train and test model in n fold crossvalidation
-                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = RESULTPATH, train_epochs = 1001, lr = 0.00005, train_repeats = 7, ncrossval=1)
+                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = RESULTPATH, train_epochs = 1001, lr = 0.00001, train_repeats = 7, ncrossval=1)
 
 
 if calc_shapley:
     gibbs_sampler = tc.load(RESULTPATH + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = sh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device, steps=1000)
+    shapley.calc_all(device=device, steps=3000)
 
 if calc_single_shapley:
     gibbs_sampler = tc.load(RESULTPATH + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
