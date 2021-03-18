@@ -7,8 +7,9 @@ import numpy as np
 import torch.nn as nn
 
 dim = 16
-drop_out = 0.8
-nsamples = 6000
+drop_out = 0.2
+nsamples = 10000
+tc.manual_seed(0)
 mask = np.random.uniform(size=(dim, dim)) > drop_out
 adjacency = mask * np.tril(np.ones_like(mask), -1) * 1.0
 
@@ -35,7 +36,7 @@ class graph_generator(nn.Module):
         super(graph_generator, self).__init__()
         self.dim=dim
         self.adjacency = tc.tensor(adjacency, dtype = tc.int)
-        #tc.manual_seed(0)
+        tc.manual_seed(0)
         self.function_pos = tc.randint(1,len(functions), size= self.adjacency.shape, dtype = tc.int) * self.adjacency
 
         self.nodes = [Node(dim, self.function_pos[:,i], i) for i in range(self.dim)]
@@ -45,7 +46,7 @@ class graph_generator(nn.Module):
         nodevalues = noise # implicitly this is a self loop with f(x) = x
         for i in range(self.dim):
             # loop through nodes
-            nodevalues += self.nodes[i].propagate(nodevalues)
+            nodevalues += 2 * self.nodes[i].propagate(nodevalues)
         return nodevalues
 
 

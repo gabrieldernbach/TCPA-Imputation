@@ -64,6 +64,8 @@ class Shapley:
 
         # add losses until convergence
         for t in range(1, 1+steps):
+            if (t % 500) ==0:
+                print(t)
             self.shapleyset.getMasks()
             for target, masked_data, Mask, masked_dataP, MaskP in self.shapleyloader:
                 #print(Mask) # check if Masks are different every time!
@@ -90,7 +92,7 @@ class Shapley:
                 break
 
         pandasframe = pd.DataFrame(data = {'masked_protein': self.protein_names, 'shapley': meandiff.cpu().detach()})
-        pandasframe.to_csv('results/shapley/data/batched_shapley_values_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], probability, len(convergencechecker)-1), index=False)
+        pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], probability, len(convergencechecker)-1), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
         for probability in probabilities:

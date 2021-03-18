@@ -13,60 +13,56 @@ import singlesampleShapley_Shapley as sssh
 
 
 #specify hyperparameters
-DATAPATH = '../data2/TCPA_data_sel.csv'
-RESULTPATH = 'results/results'
-for folder in ('figures', 'log', 'trained_model'):
-    if not os.path.exists(RESULTPATH + '/' + folder):
-        os.makedirs(RESULTPATH + '/' + folder)
+for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/counter'):
+    if not os.path.exists(folder):
+        os.makedirs(folder)
 device = tc.device('cuda:0')
 
-train_network = True
+train_network = False
 calc_shapley = True
 calc_single_shapley = False
 counterfactual = False
 
-load_epoch, load_variational, load_k, load_lin = 1000, False, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 10, True, 5, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 plot = False
 
-train_set, test_set = data_sh.get_data('nn_data')
+train_set, test_set = data_sh.get_data('custom')
 
 print(train_set.shape)
 
 protein_names = None
 
 if train_network:
-    for variational in [False]:
+    for variational in [True]:
         for nonlinear in [True]:
-            for k in [1]:
+            for k in [5]:
                 #specify neural network
-                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*8, sample_width=train_set.size(1)*8, depth=3, variational = variational, nonlinear = True, k = 1)
+                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*8, sample_width=train_set.size(1)*8, depth=3, variational = variational, nonlinear = True, k = k)
                 #init gibb sampler with neural network
-                gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path=RESULTPATH, device = device)
+                gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
-                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = RESULTPATH, train_epochs = 1001, lr = 0.00001, train_repeats = 7, ncrossval=1)
+                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 11, lr = 0.0001, train_repeats = 7, ncrossval=1)
 
 
 if calc_shapley:
-    gibbs_sampler = tc.load(RESULTPATH + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
+    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = sh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device, steps=3000)
+    shapley.calc_all(device=device, steps=10)
 
 if calc_single_shapley:
-    gibbs_sampler = tc.load(RESULTPATH + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
+    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = sssh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
     #shapley.calc_shapleypqs(p=2,sample=0, steps = 100, device = device, probability = 0.5)
     shapley.calc_all(device=device, steps=300)
 
 if counterfactual:
-    gibbs_sampler = tc.load(RESULTPATH + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
+    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     counter = cf.Counter(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
     #counter.calc_counterfactualpq(5,0.1,3, device=device)
     counter.calc_all(device=device)
 
-if plot:
-    plots.plot(RESULTPATH)
 

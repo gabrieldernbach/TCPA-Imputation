@@ -22,7 +22,7 @@ class ResBlock(nn.Module):
         self.layers = nn.Sequential(
             bn_linear(input_dim, width),
             activation,
-            nn.Dropout(p=0.3),
+            nn.Dropout(p=0.5),
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
@@ -57,6 +57,8 @@ class VAE(nn.Module):
         std = tc.exp(0.5 * log_var).repeat(k,1)
         eps = tc.randn_like(std)
         results = mean.repeat(k,1) + eps*std
+        results = tc.clamp(results, min=-20, max=+20)
+        #print(tc.any(tc.abs(results)>10))
 
         #std = tc.exp(0.5 * log_var)
         #eps = tc.randn_like(std)
@@ -79,7 +81,7 @@ class VAE(nn.Module):
 
 # wrapper for VAE: repeatedly maps protein data with VAE on correct protein data. between repeats known data is initialized again as ground truth
 class GibbsSampler(nn.Module):
-    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 10, device = 'cpu'):
+    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 12, device = 'cpu'):
         super(GibbsSampler,self).__init__()
         self.neuralnet = neuralnet # VAE or other module
         self.warm_up = warm_up # first repeats are discarded
@@ -111,7 +113,6 @@ class GibbsSampler(nn.Module):
                 t+=1
                 #print(t)
                 mov_avg = ((t-1)/t) * mov_avg + (1/t) * x.detach()
-                #print('sum', x.sum(),mov_avg.sum())
                 self.results.append(mov_avg)
                 if tc.all(tc.abs(self.results[-2]-self.results[-1]) < self.convergence):
                     print('converged at', len(self.results)-2)
@@ -120,7 +121,7 @@ class GibbsSampler(nn.Module):
         return mov_avg
 
 
-    def train(self, batch_masked, batch_target, Mask, lr, train_repeats = 20):
+    def train(self, batch_masked, batch_target, Mask, lr, train_repeats = 10):
         self.neuralnet.to(self.device).train()
         optimizer = tc.optim.Adam(self.neuralnet.parameters(), lr = lr)
         optimizer.zero_grad()
@@ -155,7 +156,7 @@ class GibbsSampler(nn.Module):
 
         endresult = self.forward(batch_masked, Mask)
         #print(criterion(endresult, batch_target))
-        intermediate_singe_results = [criterion(prediction, batch_target) for prediction in self.single_results if tc.is_tensor(prediction)]
+        intermediate_singe_results = [criterion(prediction[Mask==0], batch_target[Mask==0]) for prediction in self.single_results if tc.is_tensor(prediction)]
         intermediate_averaged_results =  [criterion(prediction[Mask==0], batch_target[Mask==0]) for prediction in self.results if tc.is_tensor(prediction)]
         return intermediate_averaged_results, intermediate_singe_results
 
