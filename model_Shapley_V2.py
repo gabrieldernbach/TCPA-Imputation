@@ -195,7 +195,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
 
 class ProteinSet(Dataset):
     def __init__(self, data, factor):
-        self.factor=self.factor
+        self.factor=factor
         self.data = data.float()
         self.nsamples, self.nfeatures = data.shape
         self.R = self.init_randomsample()
