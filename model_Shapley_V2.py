@@ -81,7 +81,7 @@ class VAE(nn.Module):
 
 # wrapper for VAE: repeatedly maps protein data with VAE on correct protein data. between repeats known data is initialized again as ground truth
 class GibbsSampler(nn.Module):
-    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 12, device = 'cpu'):
+    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 15, device = 'cpu'):
         super(GibbsSampler,self).__init__()
         self.neuralnet = neuralnet # VAE or other module
         self.warm_up = warm_up # first repeats are discarded

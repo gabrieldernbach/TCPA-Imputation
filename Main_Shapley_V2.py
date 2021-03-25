@@ -38,9 +38,9 @@ protein_names = None
 if train_network:
     for variational in [True]:
         for nonlinear in [True]:
-            for k in [5]:
+            for k in [1]:
                 #specify neural network
-                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*4, sample_width=train_set.size(1)*8, depth=3, variational = variational, nonlinear = True, k = k)
+                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*4, sample_width=train_set.size(1)*8, depth=2, variational = variational, nonlinear = True, k = k)
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
