@@ -28,7 +28,11 @@ class Node():
         self.weights = tc.tensor(np.random.choice(np.concatenate((np.arange(-2,-0.5, 0.1), np.arange(0.5,2.0, 0.1))), size = self.dim))
     def propagate(self,x):
         results = [functions[self.function_ids[i]](self.weights[i]*x[:,self.id]) for i in range(self.dim)]
-        return tc.stack(results, dim=1).float()
+        tensor = tc.stack(results, dim=1).float()
+        mean_ = tensor.mean(dim=1, keepdim=True)
+        std_ = tensor.std(dim=1, keepdim=True)
+        norm_tensor = (tensor-mean_)/std_
+        return norm_tensor
 
 class graph_generator(nn.Module):
     def __init__(self, dim, adjacency, seed = 0):
