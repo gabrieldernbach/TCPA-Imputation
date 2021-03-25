@@ -25,7 +25,7 @@ calc_single_shapley = False
 counterfactual = False
 conditional = True
 
-load_epoch, load_variational, load_k, load_lin = 1, True, 500, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 500, True, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 plot = False
 
