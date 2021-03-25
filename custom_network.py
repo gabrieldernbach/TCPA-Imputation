@@ -33,6 +33,8 @@ class Node():
         mean_ = tensor.mean(dim=1, keepdim=True)
         std_ = tensor.std(dim=1, keepdim=True) + 0.1
         norm_tensor = (tensor-mean_)/std_
+        print(tensor.mean(0))
+
         return norm_tensor
 
 class graph_generator(nn.Module):
@@ -50,7 +52,7 @@ class graph_generator(nn.Module):
         nodevalues = noise # implicitly this is a self loop with f(x) = x
         for i in range(self.dim):
             # loop through nodes
-            nodevalues += 2 * self.nodes[i].propagate(nodevalues)
+            nodevalues += self.nodes[i].propagate(nodevalues)
         return nodevalues
 
 
