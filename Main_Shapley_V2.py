@@ -20,10 +20,10 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
 device = tc.device('cuda:0')
 
 train_network = True
-calc_shapley = False
+calc_shapley = True
 calc_single_shapley = False
 counterfactual = False
-conditional = True
+conditional = False
 
 load_epoch, load_variational, load_k, load_lin = 500, True, 5, 'nonlinear' #define model that shall be loaded for shapley
 ##################
