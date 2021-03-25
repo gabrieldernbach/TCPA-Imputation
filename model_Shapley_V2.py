@@ -160,14 +160,14 @@ class GibbsSampler(nn.Module):
         intermediate_averaged_results =  [criterion(prediction[Mask==0], batch_target[Mask==0]) for prediction in self.results if tc.is_tensor(prediction)]
         return intermediate_averaged_results, intermediate_singe_results
 
-def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_repeats, ncrossval=1, proportion = [0.7,0.1, 0.2]):
+def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_repeats, batch_factor, ncrossval=1, proportion = [0.7,0.1, 0.2]):
     #todo crossvalidation
     nsamples, nfeatures = train_data.shape
     tc.manual_seed(0)
-    trainset = ProteinSet(train_data)
-    testset = ProteinSet(test_data)
-    trainloader = DataLoader(trainset, batch_size = nsamples, shuffle = True)
-    testloader = DataLoader(testset, batch_size = nsamples, shuffle = True)
+    trainset = ProteinSet(train_data, batch_factor)
+    testset = ProteinSet(test_data, batch_factor)
+    trainloader = DataLoader(trainset, batch_size = nsamples*batch_factor, shuffle = True)
+    testloader = DataLoader(testset, batch_size = nsamples*batch_factor, shuffle = True)
 
     for epoch in range (train_epochs):
 
@@ -194,8 +194,8 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
 
 
 class ProteinSet(Dataset):
-    def __init__(self, data):
-        self.factor=5
+    def __init__(self, data, factor):
+        self.factor=self.factor
         self.data = data.float()
         self.nsamples, self.nfeatures = data.shape
         self.R = self.init_randomsample()
