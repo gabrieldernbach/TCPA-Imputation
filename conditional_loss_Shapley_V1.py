@@ -73,8 +73,8 @@ class Shapley:
             loss, lossP = criterion(pred, target), criterion(predP, target)
             meandiff = lossP-loss
 
-        pandasframe = pd.DataFrame(data = {'value': meandiff.cpu().detach()})
-        pandasframe.to_csv('results/conditional_loss/batched_shapley_values_{}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q]), index=False)
+        pandasframe = pd.DataFrame(data = {'value': meandiff.cpu().detach()}, index= [0])
+        pandasframe.to_csv('results/conditional_loss/batched_shapley_values_{}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q]))
 
     def calc_all(self, device):
         for q in range(self.nfeatures):

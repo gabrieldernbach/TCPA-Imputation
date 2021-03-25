@@ -19,13 +19,13 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
         os.makedirs(folder)
 device = tc.device('cuda:0')
 
-train_network = True
+train_network = False
 calc_shapley = False
 calc_single_shapley = False
 counterfactual = False
 conditional = True
 
-load_epoch, load_variational, load_k, load_lin = 500, True, 5, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 1, True, 5, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 plot = False
 
@@ -44,7 +44,7 @@ if train_network:
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
-                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 1001, lr = 0.0001, train_repeats = 15, ncrossval=1)
+                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 2, lr = 0.0001, train_repeats = 15, ncrossval=1)
 
 
 if conditional:
