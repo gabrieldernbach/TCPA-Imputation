@@ -61,17 +61,20 @@ class Shapley:
         meandiff = tc.zeros(1).to(self.device) # initialize the mean difference between sets with and without p
         criterion = F.mse_loss
 
-        self.shapleyset.getMasks()
-        for target, masked_data, Mask, masked_dataP, MaskP in self.shapleyloader:
+        t = 0
+        for t in range(100):
+            t+=1
+            self.shapleyset.init_randomsample()
+            for target, masked_data, Mask, masked_dataP, MaskP in self.shapleyloader:
 
-            target, masked_data, Mask, masked_dataP, MaskP = target.to(device), masked_data.to(device), Mask.to(
-                device), masked_dataP.to(device), MaskP.to(device)
-            #calculate prediction and loss
-            with tc.no_grad():
-                pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
+                target, masked_data, Mask, masked_dataP, MaskP = target.to(device), masked_data.to(device), Mask.to(
+                    device), masked_dataP.to(device), MaskP.to(device)
+                #calculate prediction and loss
+                with tc.no_grad():
+                    pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
 
-            loss, lossP = criterion(pred[:,q], target[:,q]), criterion(predP[:,q], target[:,q])
-            meandiff = loss-lossP
+                loss, lossP = criterion(pred[:,q], target[:,q]), criterion(predP[:,q], target[:,q])
+                meandiff = (t-1)/t * meandiff + 1/t*(loss-lossP)
 
         pandasframe = pd.DataFrame(data = {'value': meandiff.cpu().detach().numpy()}, index= [0])
         pandasframe.to_csv('results/conditional_loss/batched_shapley_values_{}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q]))
