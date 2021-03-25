@@ -7,7 +7,7 @@ import numpy as np
 import torch.nn as nn
 
 dim = 8
-drop_out = 0.2
+drop_out = 0.4
 nsamples = 10000
 tc.manual_seed(0)
 mask = np.random.uniform(size=(dim, dim)) > drop_out
