@@ -16,7 +16,8 @@ adjacency = mask * np.tril(np.ones_like(mask), -1) * 1.0
 functions = [lambda x: tc.zeros_like(x),
              lambda x: tc.sin(x),
               lambda x:tc.cos(x),
-              lambda x: x]
+              lambda x: x,
+             lambda x: x**2]
 
 class Node():
     #node gets a value and returns a vector with values for other nodes
