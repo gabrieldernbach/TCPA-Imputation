@@ -173,7 +173,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
 
         for masked_data,target, Mask in trainloader:
             model.train(masked_data, target, Mask, lr = lr, train_repeats = train_repeats)
-        if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 10000,15000, 20000, train_epochs]:
+        if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 800, 1000, 1500, 2000, 2500, 3000, 4000, 5000, 10000,15000, 20000, train_epochs]:
             print('trained', epoch)
             tc.save(model, path + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
 
