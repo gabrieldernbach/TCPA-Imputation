@@ -6,7 +6,7 @@ from sklearn.utils import shuffle
 import numpy as np
 import torch.nn as nn
 
-dim = 16
+dim = 8
 drop_out = 0.2
 nsamples = 10000
 tc.manual_seed(0)

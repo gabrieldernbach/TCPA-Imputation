@@ -73,7 +73,7 @@ def get_data(dataname):
         np.savetxt("results/adjacency/adjacency.csv", np.array(adjacency), delimiter=",")
         np.savetxt("results/adjacency/function.csv", np.array(function), delimiter=",")
 
-        np.savetxt("results/data.csv", np.array(randomized_data), delimiter=",")
+        np.savetxt("results/data/data.csv", np.array(randomized_data), delimiter=",")
 
     train_set, test_set = randomized_data[:randomized_data.size(0)//2,:], randomized_data[randomized_data.size(0)//2:,:]
 
