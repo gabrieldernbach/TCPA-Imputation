@@ -7,17 +7,16 @@ import numpy as np
 import torch.nn as nn
 
 dim = 8
-drop_out = 0.6
+drop_out = 0.7
 nsamples = 10000
 tc.manual_seed(0)
 mask = np.random.uniform(size=(dim, dim)) > drop_out
 adjacency = mask * np.tril(np.ones_like(mask), -1) * 1.0
 
 functions = [lambda x: tc.zeros_like(x),
-             #lambda x: tc.sin(x),
-              #lambda x:tc.cos(x),
-              lambda x: x,
-              lambda x: x ** 2]
+             lambda x: tc.sin(x),
+              lambda x:tc.cos(x),
+              lambda x: x]
 
 class Node():
     #node gets a value and returns a vector with values for other nodes
