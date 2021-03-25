@@ -195,6 +195,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
 
 class ProteinSet(Dataset):
     def __init__(self, data):
+        self.factor=5
         self.data = data.float()
         self.nsamples, self.nfeatures = data.shape
         self.R = self.init_randomsample()
@@ -204,11 +205,11 @@ class ProteinSet(Dataset):
         return tc.stack(tensor_list).t()
 
     def __len__(self):
-        return self.nsamples
+        return self.nsamples*self.factor
 
     def __getitem__(self, idx):
         Mask = tc.distributions.bernoulli.Bernoulli(tc.tensor([0.5] * self.nfeatures)).sample().float()
-        target = self.data[idx, :]
+        target = self.data[idx%self.nsamples, :]
         random_values = self.R[idx, :]
         masked_data = tc.where(Mask == 1.0, target, random_values)
 
