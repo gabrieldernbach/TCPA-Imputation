@@ -19,13 +19,13 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
         os.makedirs(folder)
 device = tc.device('cuda:0')
 
-train_network = False
+train_network = True
 calc_shapley = False
 calc_single_shapley = False
 counterfactual = False
 conditional = True
 
-load_epoch, load_variational, load_k, load_lin = 1, True, 5, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 500, True, 5, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 plot = False
 
