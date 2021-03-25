@@ -31,7 +31,7 @@ class Node():
         results = [functions[self.function_ids[i]](self.weights[i]*x[:,self.id]) for i in range(self.dim)]
         tensor = tc.stack(results, dim=1).float()
         mean_ = tensor.mean(dim=1, keepdim=True)
-        std_ = tensor.std(dim=1, keepdim=True)
+        std_ = tensor.std(dim=1, keepdim=True) + 0.1
         norm_tensor = (tensor-mean_)/std_
         return norm_tensor
 
