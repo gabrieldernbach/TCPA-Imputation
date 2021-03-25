@@ -70,7 +70,7 @@ class Shapley:
             with tc.no_grad():
                 pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
 
-            loss, lossP = criterion(pred, target), criterion(predP, target)
+            loss, lossP = criterion(pred[:,q], target[:,q]), criterion(predP[:,q], target[:,q])
             meandiff = loss-lossP
 
         pandasframe = pd.DataFrame(data = {'value': meandiff.cpu().detach().numpy()}, index= [0])
