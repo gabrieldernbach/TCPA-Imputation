@@ -11,16 +11,17 @@ import Data_Shapley_V2 as data_sh
 import counterfactual_Shapley_V2 as cf
 import singlesampleShapley_Shapley as sssh
 import conditional_loss_Shapley_V1 as cond
+import triangleshapley_Shapley_V1 as tri
 
 #specify hyperparameters
-for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/counter',
+for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/triangle', 'results/counter',
                'results/conditional_loss'):
     if not os.path.exists(folder):
         os.makedirs(folder)
 device = tc.device('cuda:0')
 
-train_network = True
-calc_shapley = True
+train_network = False
+calc_shapley = False
 calc_single_shapley = False
 counterfactual = False
 conditional = False
@@ -58,6 +59,13 @@ if calc_shapley:
     gibbs_sampler.device = device
     shapley = sh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
     shapley.calc_all(device=device, steps=2001)
+
+if tri:
+    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
+    gibbs_sampler.device = device
+    shapley = tri.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
+    shapley.calc_all(device=device, ps = [], conditionals = [], steps=2001)
+
 
 if calc_single_shapley:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
