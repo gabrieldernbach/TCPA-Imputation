@@ -77,7 +77,7 @@ def get_data(dataname):
 
     elif dataname == 'threeproteins':
         tc.manual_seed(0)
-        x = tc.randn(8000,1)
+        x = tc.randn(4000,1)
         y = 2*x-0.3*x**3
         z = tc.sin(x)
         randomized_data = tc.cat([x,y,z], dim=1)
