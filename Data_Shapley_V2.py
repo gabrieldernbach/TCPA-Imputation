@@ -78,12 +78,12 @@ def get_data(dataname):
     elif dataname == 'threeproteins':
         tc.manual_seed(0)
         x = tc.randn(4000,1)
-        y = 2*x-0.3*x**3
-        z = 2/x+x
+        y = x-0.5/x
+        z = y-0.5/y
         a = tc.randn(4000,1)
         b = tc.randn(4000,1)
-        c = 2*x-0.3*x**3
-        d = 2/x+x + 0.1*a
+        c = b-0.5/b
+        d = c-0.5/c + 0.1*a
         randomized_data = tc.cat([x,y,z,a,b,c,d], dim=1)
         meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
         randomized_data = (randomized_data - meanv)/sdv
