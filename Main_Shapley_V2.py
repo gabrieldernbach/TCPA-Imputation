@@ -29,7 +29,7 @@ load_epoch, load_variational, load_k, load_lin = 800, True, 1, 'nonlinear' #defi
 ##################
 plot = False
 
-train_set, test_set = data_sh.get_data('custom')
+train_set, test_set = data_sh.get_data('threeproteins')
 
 print(train_set.shape)
 
@@ -57,7 +57,7 @@ if calc_shapley:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = sh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device, steps=5001)
+    shapley.calc_all(device=device, steps=2001)
 
 if calc_single_shapley:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?

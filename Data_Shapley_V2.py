@@ -75,6 +75,15 @@ def get_data(dataname):
 
         np.savetxt("results/data/data.csv", np.array(randomized_data), delimiter=",")
 
+    elif dataname == 'threeproteins':
+        tc.manual_seed(0)
+        x = tc.randn(8000,1)
+        y = 2*x-0.3*x**3
+        z = tc.sin(x)
+        randomized_data = tc.cat([x,y,z], dim=1)
+        meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
+        randomized_data = (randomized_data - meanv)/sdv
+
     train_set, test_set = randomized_data[:randomized_data.size(0)//2,:], randomized_data[randomized_data.size(0)//2:,:]
 
     return train_set, test_set
