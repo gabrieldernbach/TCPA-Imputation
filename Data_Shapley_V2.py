@@ -84,7 +84,7 @@ def get_data(dataname):
         a = tc.randn(nsamples,1)
         b = tc.randn(nsamples,1)
         c = b-0.5/(tc.abs(b)+0.2) + tc.randn(nsamples,1)
-        d = c-0.5/(tc.abs(c)+0.2) + 0.1*b + tc.randn(nsamples,1)
+        d = c-0.5/(tc.abs(c)+0.2) + 0.2*b + tc.randn(nsamples,1)
         randomized_data = tc.cat([x,y,z,a,b,c,d], dim=1)
         meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
         randomized_data = (randomized_data - meanv)/sdv
