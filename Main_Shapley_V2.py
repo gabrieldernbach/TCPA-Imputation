@@ -30,7 +30,7 @@ load_epoch, load_variational, load_k, load_lin = 800, True, 1, 'nonlinear' #defi
 ##################
 plot = False
 
-train_set, test_set = data_sh.get_data('threeproteins')
+train_set, test_set = data_sh.get_data('custom')
 
 print(train_set.shape)
 
