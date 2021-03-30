@@ -99,9 +99,10 @@ class Shapley:
         pandasframe = pd.DataFrame(data = {'masked_protein': self.protein_names, 'shapley': meandiff.cpu().detach()})
         pandasframe.to_csv('results/triangle/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p],self.protein_names[conditional], probability, len(convergencechecker)-1), index=False)
 
-    def calc_all(self, device, steps, ps, conditionals, probabilities=[0.5]):
+    def calc_all(self, device, steps, probabilities=[0.5]):
+        edges = get_edges()
         for probability in probabilities:
-            Parallel(n_jobs=6)(delayed(self.calc_shapleypq)(p, conditional, steps, device, probability) for p, conditional in zip(ps, conditionals))
+            Parallel(n_jobs=1)(delayed(self.calc_shapleypq)(p, conditional, steps, device, probability) for p, conditional in edges)
 
 
 
@@ -132,4 +133,5 @@ def get_edges():
         return end_list
 
     triangle_edges = [get_edges(a) for a in triad_cliques]
-    return triangle_edges
+    flattened_edges = [item for sublist in triangle_edges for item in sublist]
+    return flattened_edges

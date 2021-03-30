@@ -20,8 +20,8 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
         os.makedirs(folder)
 device = tc.device('cuda:0')
 
-train_network = False
-calc_shapley = False
+train_network = True
+calc_shapley = True
 calc_single_shapley = False
 counterfactual = False
 conditional = False
@@ -61,10 +61,10 @@ if calc_shapley:
     shapley.calc_all(device=device, steps=2001)
 
 if triangle:
-    #gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
-    #gibbs_sampler.device = device
-    #shapley = tri.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    #shapley.calc_all(device=device, ps = [0 ,0 , 1,1,2,2, 4,4,5,5,6,6], conditionals = [1,2,0,2,0,1,5,6,4,6,4,5], steps=2001)
+    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
+    gibbs_sampler.device = device
+    shapley = tri.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
+    shapley.calc_all(device=device, steps=2001)
     tri.get_edges()
 
 if calc_single_shapley:
