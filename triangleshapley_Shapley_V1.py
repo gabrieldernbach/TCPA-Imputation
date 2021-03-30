@@ -4,6 +4,9 @@ from torch.utils.data import DataLoader, Dataset
 import random
 from joblib import Parallel, delayed
 import pandas as pd
+import os
+import networkx as nx
+import itertools
 
 class ShapleySet(Dataset):
     # ShapleySet generates the masked data from ground truth data. Two masks are returned, with and without p masked
@@ -104,4 +107,29 @@ class Shapley:
 
 
 
+def get_edges():
+    def load_file(filename):
+        file_data = pd.read_csv(os.getcwd() + '/results/shapley/' + filename)
+        target = filename.split('_')[3]
+        file_data['target'] = target
+        return file_data
 
+    filenames = os.listdir(os.getcwd() + '/results/shapley/')
+    data = pd.concat([load_file(filename) for filename in filenames])
+    data['target'] = data['target'].astype(int)
+
+    data2 = data[data['shapley'] > 0.001]
+    edge_list = (list(zip(list(data2['target']), list(data2['masked_protein']))))
+    graph = nx.from_edgelist(edge_list)
+
+    all_cliques = nx.enumerate_all_cliques(graph)
+    triad_cliques = [x for x in all_cliques if len(x) == 3]
+    a = triad_cliques[0]
+
+    def get_edges(triad_clique):
+        duo_list = list(itertools.product(triad_clique, triad_clique))
+        end_list = [a for a in duo_list if a[0] != a[1]]
+        return end_list
+
+    triangle_edges = [get_edges(a) for a in triad_cliques]
+    return triangle_edges
