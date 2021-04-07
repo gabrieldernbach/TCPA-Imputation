@@ -78,10 +78,9 @@ class MixedVAE(nn.Module):
         self.dec = nn.Sequential(*[LinSkip(self.dim) for _ in range(depth)])
 
     def sample(self, mean, log_var):
-        # std =  torch.exp(0.5 * log_var)
         std = F.softplus(log_var)
         eps = torch.randn_like(std)
-        smp = mean + eps * std
+        smp = mean # + eps * std
         return torch.clamp(smp, min=-20, max=+20)
 
     def forward(self, data):
@@ -133,7 +132,7 @@ class MixedVAE(nn.Module):
         ce = F.cross_entropy(cat_scores[data.tmask.squeeze(1)], data.t0[data.tmask], reduction="sum")
         mse = F.mse_loss(data.xn[data.xmask], data.x0[data.xmask], reduction="sum")
         kl = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
-        return kl + mse + ce
+        return mse + ce # + kl
 
     @staticmethod
     def cossim(a, b):  # for illustration set a (64 x 128), b (17 x 128)

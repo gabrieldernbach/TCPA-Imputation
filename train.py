@@ -76,7 +76,7 @@ def main():
         metrics.clear()
         for idx, data in enumerate(data_bunch.train, start=1):
             data = Record(**data).to(cfg.device)
-            for it in range(200):
+            for it in range(50):
                 data, loss = model.train_step(data)
 
                 optimizer.zero_grad()

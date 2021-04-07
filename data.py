@@ -187,7 +187,7 @@ class Config:
     num_worker: int = 32
     epochs: int = 300
     resume: str = "ckpt.pt" #None # "ckpt.pt"
-    device: str = "cuda"
+    device: str = "cpu"
     mixed_precision: bool = True
 
 
