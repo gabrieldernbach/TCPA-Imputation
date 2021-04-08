@@ -25,7 +25,7 @@ calc_single_shapley = False
 counterfactual = False
 conditional = False
 triangle=True
-load_epoch, load_variational, load_k, load_lin = 100, True, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 500, True, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 plot = False
 
@@ -44,7 +44,7 @@ if train_network:
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
-                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 101, lr = 0.0001, train_repeats = 15, batch_factor=1, ncrossval=1)
+                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 501, lr = 0.0001, train_repeats = 15, batch_factor=1, ncrossval=1)
     print('training finished')
 
 if conditional:
@@ -57,13 +57,13 @@ if calc_shapley:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = sh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device, steps=21)
+    shapley.calc_all(device=device, steps=2001)
 
 if triangle:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = tri.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device, steps=21)
+    shapley.calc_all(device=device, steps=2001)
     tri.get_edges()
 
 if calc_single_shapley:
