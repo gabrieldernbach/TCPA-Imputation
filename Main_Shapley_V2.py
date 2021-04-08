@@ -6,7 +6,6 @@ import torch as tc
 import pandas as pd
 import model_Shapley_V2 as model
 import shapley_Shapley_V1 as sh
-import plots_Shapley_V1 as plots
 import Data_Shapley_V2 as data_sh
 import counterfactual_Shapley_V2 as cf
 import singlesampleShapley_Shapley as sssh
@@ -30,7 +29,7 @@ load_epoch, load_variational, load_k, load_lin = 800, True, 1, 'nonlinear' #defi
 ##################
 plot = False
 
-train_set, test_set = data_sh.get_data('custom')
+train_set, test_set = data_sh.get_data('beeline')
 
 print(train_set.shape)
 

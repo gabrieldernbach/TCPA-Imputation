@@ -90,6 +90,15 @@ def get_data(dataname):
         meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
         randomized_data = (randomized_data - meanv)/sdv
 
+    elif dataname == 'beeline':
+        datapath = '~/PycharmProjects/Proteomics/data/BoolOdeRendered/Synthetic/dyn-BF/'
+        data = pd.read_csv(datapath + 'ExpressionData.csv')
+        data = np.array((data.iloc[:,1:]))
+        randomized_data = tc.tensor(data).t()[tc.randperm(data.shape[1]),:]
+        meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
+        randomized_data = (randomized_data - meanv)/sdv
+
+
     train_set, test_set = randomized_data[:randomized_data.size(0)//2,:], randomized_data[randomized_data.size(0)//2:,:]
 
     return train_set, test_set
