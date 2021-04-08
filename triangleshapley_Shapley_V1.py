@@ -102,7 +102,7 @@ class Shapley:
     def calc_all(self, device, steps, probabilities=[0.5]):
         edges = get_edges()
         for probability in probabilities:
-            Parallel(n_jobs=5)(delayed(self.calc_shapleypq)(p, conditional, steps, device, probability) for p, conditional in edges)
+            Parallel(n_jobs=1)(delayed(self.calc_shapleypq)(p, conditional, steps, device, probability) for p, conditional in edges)
 
 
 
