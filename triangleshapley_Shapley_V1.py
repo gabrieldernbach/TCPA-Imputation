@@ -119,7 +119,7 @@ def get_edges():
     data = pd.concat([load_file(filename) for filename in filenames])
     data['target'] = data['target'].astype(int)
 
-    data2 = data[data['shapley'] > 0.02]
+    data2 = data[data['shapley'] > 0.01]
     edge_list = (list(zip(list(data2['target']), list(data2['masked_protein']))))
     graph = nx.from_edgelist(edge_list)
 
