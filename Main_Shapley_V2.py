@@ -11,6 +11,7 @@ import counterfactual_Shapley_V2 as cf
 import singlesampleShapley_Shapley as sssh
 import conditional_loss_Shapley_V1 as cond
 import triangleshapley_Shapley_V1 as tri
+import qshapley_Shapley_V1 as qsh
 
 #specify hyperparameters
 for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/triangle', 'results/counter',
@@ -19,8 +20,8 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
         os.makedirs(folder)
 device = tc.device('cuda:0')
 
-train_network = True
-calc_shapley = True
+train_network = False
+calc_shapley = False
 calc_single_shapley = False
 counterfactual = False
 conditional = False
