@@ -134,6 +134,7 @@ def get_edges():
 
     triangle_edges = [get_edges(a) for a in triad_cliques]
     flattened_edges = [item for sublist in triangle_edges for item in sublist]
+    flattened_edges = list(set(flattened_edges))
     print(flattened_edges)
     print('edges:', len(flattened_edges))
     return flattened_edges
