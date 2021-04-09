@@ -102,7 +102,7 @@ class Shapley:
     def calc_all(self, device, steps, probabilities=[0.5]):
         edges = get_edges()
         for probability in probabilities:
-            Parallel(n_jobs=1)(delayed(self.calc_shapleypq)(p, conditional, steps, device, probability) for p, conditional in edges)
+            Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, conditional, steps, device, probability) for p, conditional in edges)
 
 
 
@@ -119,7 +119,7 @@ def get_edges():
     data = pd.concat([load_file(filename) for filename in filenames])
     data['target'] = data['target'].astype(int)
 
-    data2 = data[data['shapley'] > 0.001]
+    data2 = data[data['shapley'] > 0.01]
     edge_list = (list(zip(list(data2['target']), list(data2['masked_protein']))))
     graph = nx.from_edgelist(edge_list)
 
@@ -134,4 +134,5 @@ def get_edges():
 
     triangle_edges = [get_edges(a) for a in triad_cliques]
     flattened_edges = [item for sublist in triangle_edges for item in sublist]
+    print('edges:', len(flattened_edges))
     return flattened_edges

@@ -97,7 +97,7 @@ def get_data(dataname):
         randomized_data = tc.tensor(data).t()[tc.randperm(data.shape[1]),:]
         meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
         randomized_data = (randomized_data - meanv)/sdv
-        randomized_data = randomized_data[1:10,:]
+
 
 
     train_set, test_set = randomized_data[:randomized_data.size(0)//2,:], randomized_data[randomized_data.size(0)//2:,:]
