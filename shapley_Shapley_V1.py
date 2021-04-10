@@ -82,8 +82,7 @@ class Shapley:
                 meanloss, meanlossP = loss.mean(dim=0), lossP.mean(dim=0)
                 meandiff = (counter - 1) / counter * meandiff + specific / counter * (meanloss - meanlossP)
 
-                if t%10==0:
-                    print(meandiff[0])
+
                 # counter remembers the frequency of q being masked
                 counter += specific
                 convergencechecker.append(meandiff)
