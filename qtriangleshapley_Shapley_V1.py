@@ -84,11 +84,10 @@ class Shapley:
                 loss, lossP = criterion(pred[:,q], target[:, q]), criterion(predP[:, q], target[:, q])
 
                 meandiff = (t - 1) / t * meandiff + 1 / t * (loss - lossP)
-                print(meandiff)
 
                 convergencechecker.append(meandiff)
 
-            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.0001) and t >2000:
+            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.001) and t >2000:
                 #break if consequent meanvalues are not different
                 print(p, q, 'converged at', len(convergencechecker))
                 break
