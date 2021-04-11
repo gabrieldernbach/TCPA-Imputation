@@ -21,7 +21,7 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
 device = tc.device('cuda:0')
 
 train_network = False
-calc_shapley = False
+calc_shapley = True
 calc_single_shapley = False
 counterfactual = False
 conditional = False
