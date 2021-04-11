@@ -41,7 +41,7 @@ if train_network:
         for nonlinear in [True]:
             for k in [1]:
                 #specify neural network
-                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*2, sample_width=train_set.size(1)*4, depth=3, variational = variational, nonlinear = True, k = k)
+                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*4, sample_width=train_set.size(1)*8, depth=3, variational = variational, nonlinear = True, k = k)
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=4, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
@@ -64,7 +64,7 @@ if triangle:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = tri.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device, steps=1001)
+    shapley.calc_all(device=device, steps=5001)
 
 if calc_single_shapley:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
