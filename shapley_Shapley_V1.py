@@ -87,7 +87,7 @@ class Shapley:
                 counter += specific
                 convergencechecker.append(meandiff)
 
-            if all(abs(convergencechecker[-2] - convergencechecker[-1])<0.0001) and t >1000:
+            if all(abs(convergencechecker[-2] - convergencechecker[-1])<0.00001) and t >5000:
                 #break if consequent meanvalues are not different
                 print(p, 'converged at', len(convergencechecker))
                 break
@@ -95,7 +95,7 @@ class Shapley:
         pandasframe = pd.DataFrame(data = {'masked_protein': self.protein_names, 'shapley': meandiff.cpu().detach()})
         pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], probability, len(convergencechecker)-1), index=False)
 
-    def calc_all(self, device, steps, probabilities=[0.2]):
+    def calc_all(self, device, steps, probabilities=[0.1]):
         for probability in probabilities:
             Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, steps, device, probability) for p in range(self.nfeatures))
 
