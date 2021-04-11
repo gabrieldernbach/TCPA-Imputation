@@ -7,7 +7,7 @@ import pandas as pd
 
 class ShapleySet(Dataset):
     # ShapleySet generates the masked data from ground truth data. Two masks are returned, with and without p masked
-    def __init__(self, data, p, probability= 0.5):
+    def __init__(self, data, p, probability= 0.3):
         self.probability = probability # with 0.5, all combinations of masked and unmasked proteins are equally likely
         #tc.manual_seed(random.randint(1,100000)) # set seed for ... delete?
         self.nsamples, self.nfeatures = data.shape[0], data.shape[1]
@@ -87,7 +87,7 @@ class Shapley:
                 counter += specific
                 convergencechecker.append(meandiff)
 
-            if all(abs(convergencechecker[-2] - convergencechecker[-1])<0.0001) and t >4000:
+            if all(abs(convergencechecker[-2] - convergencechecker[-1])<0.00001) and t >4000:
                 #break if consequent meanvalues are not different
                 print(p, 'converged at', len(convergencechecker))
                 break

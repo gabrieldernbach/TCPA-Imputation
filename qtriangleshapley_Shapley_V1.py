@@ -95,7 +95,7 @@ class Shapley:
         pandasframe = pd.DataFrame(data = {'p':self.protein_names[p], 'q':self.protein_names[q], 'conditional': self.protein_names[conditional],'shapley': meandiff.cpu().detach()})
         print(pandasframe)
         pandasframe.to_csv('results/triangle/batched_shapley_values_{}_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], self.protein_names[conditional], probability, len(convergencechecker)-1), index=False)
-        g
+
     def calc_all(self, device, steps, probabilities=[0.5]):
         edges = get_edges()
         for probability in probabilities:
