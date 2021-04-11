@@ -87,7 +87,7 @@ class Shapley:
 
                 convergencechecker.append(meandiff)
 
-            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.001) and t >500:
+            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.0001) and t >500:
                 #break if consequent meanvalues are not different
                 print(p, q, 'converged at', len(convergencechecker))
                 break
