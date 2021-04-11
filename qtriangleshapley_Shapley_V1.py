@@ -87,13 +87,12 @@ class Shapley:
 
                 convergencechecker.append(meandiff)
 
-            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.001) and t >2000:
+            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.001) and t >500:
                 #break if consequent meanvalues are not different
                 print(p, q, 'converged at', len(convergencechecker))
                 break
 
         pandasframe = pd.DataFrame(data = {'p':self.protein_names[p], 'q':self.protein_names[q], 'conditional': self.protein_names[conditional],'shapley': meandiff.cpu().detach()})
-        print(pandasframe)
         pandasframe.to_csv('results/triangle/batched_shapley_values_{}_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], self.protein_names[conditional], probability, len(convergencechecker)-1), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
