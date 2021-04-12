@@ -26,9 +26,10 @@ class ShapleySet(Dataset):
     def getMasks(self):
         # generate Mask for ShapleySet
         self.Mask = tc.distributions.bernoulli.Bernoulli(tc.tensor([self.probability] * self.nfeatures)).sample()
+        self.Mask[self.q] = 0
         self.Maskp = self.Mask.clone()
         self.Mask[self.p], self.Maskp[self.p] = 0, 1
-        self.Mask[self.q], self.Maskp[self.q] = 0, 0
+
 
     def __len__(self):
         return self.nsamples
@@ -53,6 +54,9 @@ class Shapley:
         self.device = device
 
     def calc_shapleypq(self, p, q, steps, device, probability):
+        print(p,q)
+        if p==q:
+            return p,q
         #calculate shapley values for one predicting protein p
 
         # shapleyset is initialized for every protein p
@@ -61,7 +65,7 @@ class Shapley:
         self.model.to(device)
         meandiff = tc.zeros(1).to(self.device) # initialize the mean difference between sets with and without p
         criterion = F.mse_loss
-        convergencechecker = [0,1] # random numbers
+        convergencechecker = [a for a in range(10)] # random numbers
         counter = tc.ones(self.nfeatures).to(device)
 
         # add losses until convergence
@@ -89,12 +93,13 @@ class Shapley:
                 print(p, 'converged at', len(convergencechecker))
                 break
 
-        pandasframe = pd.DataFrame(data = {'masked_protein': self.protein_names, 'shapley': meandiff.cpu().detach()})
-        pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], probability, len(convergencechecker)-1), index=False)
+        pandasframe = pd.DataFrame(data = {'masked_protein':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': meandiff.cpu().detach()})
+        pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability, len(convergencechecker)-1), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
         for probability in probabilities:
-            Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, steps, device, probability) for p in range(self.nfeatures))
+            for q in range(self.nfeatures):
+                Parallel(n_jobs=1)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p in range(self.nfeatures))
 
 
 
