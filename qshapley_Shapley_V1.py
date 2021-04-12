@@ -99,7 +99,7 @@ class Shapley:
     def calc_all(self, device, steps, probabilities=[0.5]):
         for probability in probabilities:
             for q in range(self.nfeatures):
-                Parallel(n_jobs=1)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p in range(self.nfeatures))
+                Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p in range(self.nfeatures))
 
 
 
