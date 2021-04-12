@@ -81,7 +81,7 @@ class Shapley:
                 with tc.no_grad():
                     pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
 
-                loss, lossP = criterion(pred[:,q], target[:, q]), criterion(predP[:, q], target[:, q])
+                loss, lossP = criterion(pred[:, q], target[:, q]), criterion(predP[:, q], target[:, q])
 
                 meandiff = (t - 1) / t * meandiff + 1 / t * (loss - lossP)
 
