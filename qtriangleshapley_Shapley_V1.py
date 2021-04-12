@@ -115,7 +115,7 @@ def get_edges():
     filenames = os.listdir(os.getcwd() + '/results/shapley/')
     data = pd.concat([load_file(filename) for filename in filenames])
     data['target'] = data['target'].astype(int)
-    threshold = np.median(data['shapley'])
+    threshold = 0.5*np.median(data['shapley'])
     data2 = data[data['shapley'] > threshold]
     edge_list = (list(zip(list(data2['target']), list(data2['masked_protein']))))
     graph = nx.from_edgelist(edge_list)
