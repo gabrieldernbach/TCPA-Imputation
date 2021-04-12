@@ -7,6 +7,7 @@ import pandas as pd
 import os
 import networkx as nx
 import itertools
+import numpy as np
 
 class ShapleySet(Dataset):
     # ShapleySet generates the masked data from ground truth data. Two masks are returned, with and without p masked
@@ -119,7 +120,7 @@ def get_edges():
     data = pd.concat([load_file(filename) for filename in filenames])
     data['target'] = data['target'].astype(int)
 
-    data2 = data[data['shapley'] > 0.01]
+    data2 = data[data['shapley'] > np.median(data['shapley'])]
     edge_list = (list(zip(list(data2['target']), list(data2['masked_protein']))))
     graph = nx.from_edgelist(edge_list)
 
