@@ -90,7 +90,7 @@ class Shapley:
                 lossP = continuous.get_h(np.array(predP[:, q].cpu()-target[:, q].cpu()), k=5)
 
                 meandiff = (t - 1) / t * meandiff + 1 / t * (loss/lossP)
-
+                print(meandiff)
                 # counter remembers the frequency of q being masked
                 convergencechecker.append(meandiff)
 
