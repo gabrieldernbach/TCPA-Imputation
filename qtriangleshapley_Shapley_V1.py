@@ -8,6 +8,7 @@ import os
 import networkx as nx
 import itertools
 import numpy as np
+from entropy_estimators import continuous
 
 class ShapleySet(Dataset):
     # ShapleySet generates the masked data from ground truth data. Two masks are returned, with and without p masked
@@ -82,13 +83,16 @@ class Shapley:
                 with tc.no_grad():
                     pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
 
-                loss, lossP = criterion(pred[:, q], target[:, q]), criterion(predP[:, q], target[:, q])
+#                loss, lossP = criterion(pred[:, q], target[:, q]), criterion(predP[:, q], target[:, q])
+
+                loss = continuous.get_h(np.array(pred[:, q].cpu()-target[:, q].cpu()), k=5)
+                lossP = continuous.get_h(np.array(predP[:, q].cpu()-target[:, q].cpu()), k=5)
 
                 meandiff = (t - 1) / t * meandiff + 1 / t * (loss - lossP)
 
                 convergencechecker.append(meandiff)
 
-            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.0001) and t >2000:
+            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.00001) and t >2000:
                 #break if consequent meanvalues are not different
                 print(p, q, 'converged at', len(convergencechecker))
                 break
