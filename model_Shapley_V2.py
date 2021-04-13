@@ -22,7 +22,7 @@ class ResBlock(nn.Module):
         self.layers = nn.Sequential(
             bn_linear(input_dim, width),
             activation,
-            nn.Dropout(p=0.5),
+            nn.Dropout(p=0.2),
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
@@ -30,7 +30,7 @@ class ResBlock(nn.Module):
     def forward(self,x):
         assert tc.is_floating_point(x), 'input is not float'
         residual = x.clone()
-        return residual*self.alpha + self.layers(x)
+        return residual + self.layers(x)
 
 class VAE(nn.Module):
     def __init__(self, input_dim, width, sample_width, depth, variational=True, nonlinear = True, k=1):
