@@ -89,7 +89,6 @@ class Shapley:
                 loss = continuous.get_h(np.array(pred[:, q].cpu()-target[:, q].cpu()), k=5)
                 lossP = continuous.get_h(np.array(predP[:, q].cpu()-target[:, q].cpu()), k=5)
 
-
                 meandiff = (t - 1) / t * meandiff + 1 / t * (loss/lossP)
 
                 # counter remembers the frequency of q being masked
