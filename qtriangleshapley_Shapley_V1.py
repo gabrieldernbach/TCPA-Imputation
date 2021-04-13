@@ -99,7 +99,7 @@ class Shapley:
     def calc_all(self, device, steps, probabilities=[0.5]):
         edges = get_edges()
         for probability in probabilities:
-            Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, q, conditional, steps, device, probability) for p, q, conditional in edges)
+            Parallel(n_jobs=1)(delayed(self.calc_shapleypq)(p, q, conditional, steps, device, probability) for p, q, conditional in edges)
 
 
 
@@ -108,16 +108,16 @@ class Shapley:
 def get_edges():
     def load_file(filename):
         file_data = pd.read_csv(os.getcwd() + '/results/shapley/' + filename)
-        target = filename.split('_')[3]
-        file_data['target'] = target
         return file_data
 
     filenames = os.listdir(os.getcwd() + '/results/shapley/')
     data = pd.concat([load_file(filename) for filename in filenames])
     data['target'] = data['target'].astype(int)
     threshold = 0.5*np.median(data['shapley'])
+    #print(data)
     data2 = data[data['shapley'] > threshold]
-    edge_list = (list(zip(list(data2['target']), list(data2['masked_protein']))))
+    #print(data2)
+    edge_list = (list(zip(list(data2['target']), list(data2['source']))))
     graph = nx.from_edgelist(edge_list)
 
     all_cliques = nx.enumerate_all_cliques(graph)
