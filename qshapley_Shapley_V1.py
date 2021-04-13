@@ -4,6 +4,8 @@ from torch.utils.data import DataLoader, Dataset
 import random
 from joblib import Parallel, delayed
 import pandas as pd
+import numpy as np
+from entropy_estimators import continuous
 
 class ShapleySet(Dataset):
     # ShapleySet generates the masked data from ground truth data. Two masks are returned, with and without p masked
@@ -81,7 +83,11 @@ class Shapley:
                 with tc.no_grad():
                     pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
 
-                loss, lossP = criterion(pred[:,q], target[:,q]), criterion(predP[:,q], target[:,q])
+                #loss, lossP = criterion(pred[:,q], target[:,q]), criterion(predP[:,q], target[:,q])
+
+                loss = continuous.get_h(np.array(pred[:, q].cpu()-target[:, q].cpu()))
+                lossP = continuous.get_h(np.array(predP[:, q].cpu()-target[:, q].cpu()))
+
 
                 meandiff = (t - 1) / t * meandiff + 1 / t * (loss - lossP)
 
