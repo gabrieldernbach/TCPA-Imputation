@@ -90,6 +90,7 @@ def get_data(dataname):
         meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
         randomized_data = (randomized_data - meanv)/sdv
 
+
     elif dataname == 'beeline':
         datapath = '~/PycharmProjects/Proteomics/data/BoolOdeRendered/Synthetic/dyn-BF/'
         data = pd.read_csv(datapath + 'ExpressionData.csv')

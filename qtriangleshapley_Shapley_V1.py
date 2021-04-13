@@ -12,7 +12,7 @@ from entropy_estimators import continuous
 
 class ShapleySet(Dataset):
     # ShapleySet generates the masked data from ground truth data. Two masks are returned, with and without p masked
-    def __init__(self, data, p, q, conditional, probability= 0.5):
+    def __init__(self, data, p, q, conditional, probability):
         self.probability = probability # with 0.5, all combinations of masked and unmasked proteins are equally likely
         #tc.manual_seed(random.randint(1,100000)) # set seed for ... delete?
         self.nsamples, self.nfeatures = data.shape[0], data.shape[1]
@@ -117,7 +117,7 @@ def get_edges():
     filenames = os.listdir(os.getcwd() + '/results/shapley/')
     data = pd.concat([load_file(filename) for filename in filenames])
     data['target'] = data['target'].astype(int)
-    threshold = 0.5*np.median(data['shapley'])
+    threshold = 1.01 # 0.5*np.median(data['shapley'])
     #print(data)
     data2 = data[data['shapley'] > threshold]
     #print(data2)
