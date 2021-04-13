@@ -89,13 +89,12 @@ class Shapley:
                 loss = continuous.get_h(np.array(pred[:, q].cpu()-target[:, q].cpu()), k=5)
                 lossP = continuous.get_h(np.array(predP[:, q].cpu()-target[:, q].cpu()), k=5)
 
-
-                meandiff = (t - 1) / t * meandiff + 1 / t * (loss - lossP)
-
+                meandiff = (t - 1) / t * meandiff + 1 / t * (loss/lossP)
+                print(meandiff)
                 # counter remembers the frequency of q being masked
                 convergencechecker.append(meandiff)
 
-            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.0001) and t >2000:
+            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.00001) and t >2000:
                 #break if consequent meanvalues are not different
                 print(p, 'converged at', len(convergencechecker))
                 break
