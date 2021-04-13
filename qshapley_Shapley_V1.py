@@ -6,6 +6,7 @@ from joblib import Parallel, delayed
 import pandas as pd
 import numpy as np
 from entropy_estimators import continuous
+import itertools
 
 class ShapleySet(Dataset):
     # ShapleySet generates the masked data from ground truth data. Two masks are returned, with and without p masked
@@ -104,7 +105,7 @@ class Shapley:
 
     def calc_all(self, device, steps, probabilities=[1.0]):
         for probability in probabilities:
-                Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p ,q in zip(range(self.nfeatures), range(self.nfeatures)))
+                Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p ,q in itertools.product((self.nfeatures), range(self.nfeatures)))
 
 
 
