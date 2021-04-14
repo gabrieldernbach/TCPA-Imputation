@@ -92,7 +92,7 @@ def get_data(dataname):
 
 
     elif dataname == 'beeline':
-        datapath = '~/PycharmProjects/Proteomics/data/BoolOdeRendered/Synthetic/dyn-BF/'
+        datapath = '/home/pkeyl/Projekte/Shapley/data10/Synthetic/dyn-BF/'
         data = pd.read_csv(datapath + 'ExpressionData.csv')
         data = np.array((data.iloc[:,1:]))
         randomized_data = tc.tensor(data).t()[tc.randperm(data.shape[1]),:]
