@@ -85,10 +85,10 @@ class Shapley:
 
 #                loss, lossP = criterion(pred[:, q], target[:, q]), criterion(predP[:, q], target[:, q])
 
-                loss = continuous.get_h(np.array(pred[:, q].cpu()-target[:, q].cpu()), k=5)
-                lossP = continuous.get_h(np.array(predP[:, q].cpu()-target[:, q].cpu()), k=5)
+                loss = continuous.get_h(10*(np.array(pred[:, q].cpu()-target[:, q].cpu()), k=5))
+                lossP = continuous.get_h(10*(np.array(predP[:, q].cpu()-target[:, q].cpu()), k=5))
 
-                meandiff = (t - 1) / t * meandiff + 1 / t * (loss - lossP)
+                meandiff = (t - 1) / t * meandiff + 1 / t * (loss/lossP)
 
                 convergencechecker.append(meandiff)
 
@@ -117,7 +117,7 @@ def get_edges():
     filenames = os.listdir(os.getcwd() + '/results/shapley/')
     data = pd.concat([load_file(filename) for filename in filenames])
     data['target'] = data['target'].astype(int)
-    threshold = 1.01 # 0.5*np.median(data['shapley'])
+    threshold = 1.0 # 0.5*np.median(data['shapley'])
     #print(data)
     data2 = data[data['shapley'] > threshold]
     #print(data2)
