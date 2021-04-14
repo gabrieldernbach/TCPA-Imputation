@@ -26,7 +26,7 @@ calc_single_shapley = False
 counterfactual = False
 conditional = False
 triangle=True
-load_epoch, load_variational, load_k, load_lin = 1000, True, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 1000, False, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 plot = False
 
@@ -37,7 +37,7 @@ print(train_set.shape)
 protein_names = None
 
 if train_network:
-    for variational in [True]:
+    for variational in [False]:
         for nonlinear in [True]:
             for k in [1]:
                 #specify neural network
