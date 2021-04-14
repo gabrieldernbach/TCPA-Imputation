@@ -169,9 +169,9 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
     testloader = DataLoader(testset, batch_size = nsamples*batch_factor, shuffle = True)
 
     for epoch in range (train_epochs):
-        if epoch < train_epochs*1/3:
+        if epoch < train_epochs*1/5:
             lr_true = lr
-        elif epoch < train_epochs*2/3:
+        elif epoch < train_epochs*1/2:
             lr_true = lr / 10
         else:
             lr_true = lr/100
