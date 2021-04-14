@@ -17,12 +17,11 @@ class ResBlock(nn.Module):
     def __init__(self, input_dim, width,  act_bool, activation=nn.LeakyReLU()):
         super(ResBlock, self).__init__()
 
-        self.alpha = nn.Parameter(tc.tensor(1.0, requires_grad=True)) # delete?
         self.input_dim, self.act_bool = input_dim, act_bool
         self.layers = nn.Sequential(
             bn_linear(input_dim, width),
             activation,
-            nn.Dropout(p=0.1),
+            nn.Dropout(p=0.05),
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
@@ -81,7 +80,7 @@ class VAE(nn.Module):
 
 # wrapper for VAE: repeatedly maps protein data with VAE on correct protein data. between repeats known data is initialized again as ground truth
 class GibbsSampler(nn.Module):
-    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 15, device = 'cpu'):
+    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 20, device = 'cpu'):
         super(GibbsSampler,self).__init__()
         self.neuralnet = neuralnet # VAE or other module
         self.warm_up = warm_up # first repeats are discarded
@@ -121,7 +120,7 @@ class GibbsSampler(nn.Module):
         return mov_avg
 
 
-    def train(self, batch_masked, batch_target, Mask, lr, train_repeats = 10):
+    def train(self, batch_masked, batch_target, Mask, lr, train_repeats):
         self.neuralnet.to(self.device).train()
         optimizer = tc.optim.Adam(self.neuralnet.parameters(), lr = lr)
         optimizer.zero_grad()
@@ -170,7 +169,13 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
     testloader = DataLoader(testset, batch_size = nsamples*batch_factor, shuffle = True)
 
     for epoch in range (train_epochs):
-        lr_true = lr if epoch <train_epochs/2 else lr/10
+        if epoch < train_epochs*1/3:
+            lr_true = lr
+        elif epoch < train_epochs*2/3:
+            lr_true = lr / 10
+        else:
+            lr_true = lr/100
+
         for masked_data,target, Mask in trainloader:
             model.train(masked_data, target, Mask, lr = lr_true, train_repeats = train_repeats)
         if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 700, 800, 1000, 1300, 1500, 2000, 2500, 3000, 4000, 5000, 10000, 15000, 20000, train_epochs]:
