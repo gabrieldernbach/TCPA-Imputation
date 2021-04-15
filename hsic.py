@@ -118,7 +118,7 @@ class Shapley:
         self.shapleyset = ShapleySet(self.data, p, q,probability) # not necessary to make it a instance variable?
         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples) # take the whole dataset as sample
         self.model.to(device)
-        meandiff = tc.zeros(1).to(self.device) # initialize the mean difference between sets with and without p
+        hsic_final = tc.tensor(1).to(self.device) # initialize the mean difference between sets with and without p
         criterion = F.mse_loss
         convergencechecker = [a for a in range(10)] # random numbers
         counter = tc.ones(self.nfeatures).to(device)
@@ -142,7 +142,9 @@ class Shapley:
 
                 hisc_value = hsic_plus(residualsP[:,None], residualsQ[:,None])
 
-                meandiff = (t - 1) / t * meandiff + 1 / t * tc.tensor(hisc_value)
+                hsic_final = tc.min(hisc_value, hsic_final)
+                #meandiff = (t - 1) / t * meandiff + 1 / t * tc.tensor(hisc_final)
+
                 # counter remembers the frequency of q being masked
                 convergencechecker.append(meandiff)
 
