@@ -41,7 +41,7 @@ class VAE(nn.Module):
         self.k = k
 
         self.encoder = nn.Sequential(
-            *[ResBlock(input_dim, width, act_bool=False, activation = self.activation) for _ in range(depth)]
+            *[ResBlock(input_dim, width, act_bool=True, activation = self.activation) for _ in range(depth)]
         )
 
         # todo: sample width smaller/larger/equal to width?
