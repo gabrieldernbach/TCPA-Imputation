@@ -138,9 +138,9 @@ class Shapley:
 
 
                 residualsQ = np.array(pred[:, q].cpu()- target[:, q].cpu())
-                residualsP = np.array(pred[:, p].cpu()- target[:, p].cpu())
+                residualsP = np.array(pred[:, p].cpu() - target[:, p].cpu())
 
-                hisc_value = tc.tensor(hsic_plus(residualsP[:,None], residualsQ[:,None])).float()
+                hisc_value = tc.tensor(hsic(residualsP[:,None], residualsQ[:,None])).float()
 
                 hsic_final = tc.min(hisc_value, hsic_final)
                 #hsic_final = (t - 1) / t * hsic_final + 1 / t * tc.tensor(hisc_value)
