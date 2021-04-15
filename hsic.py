@@ -142,7 +142,7 @@ class Shapley:
 
                 hisc_value = tc.tensor(hsic_plus(residualsP[:,None], residualsQ[:,None])).float()
 
-                hsic_final = tc.min(hisc_value, hsic_final)
+                hsic_final = tc.max(hisc_value, hsic_final)
                 #meandiff = (t - 1) / t * meandiff + 1 / t * tc.tensor(hisc_final)
 
                 # counter remembers the frequency of q being masked
