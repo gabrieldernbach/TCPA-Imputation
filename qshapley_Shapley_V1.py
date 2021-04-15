@@ -66,7 +66,7 @@ class Shapley:
         self.shapleyset = ShapleySet(self.data, p, q,probability) # not necessary to make it a instance variable?
         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples) # take the whole dataset as sample
         self.model.to(device)
-        meandiff = tc.zeros(1).to(self.device) # initialize the mean difference between sets with and without p
+        meandiff = tc.tensor(1).to(self.device) # initialize the mean difference between sets with and without p
         criterion = F.mse_loss
         convergencechecker = [a for a in range(10)] # random numbers
         counter = tc.ones(self.nfeatures).to(device)
