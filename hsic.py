@@ -148,12 +148,12 @@ class Shapley:
                 # counter remembers the frequency of q being masked
                 convergencechecker.append(hsic_final)
 
-            if tc.all(tc.abs(tc.tensor(convergencechecker[-3:-1]) - tc.tensor(convergencechecker[-2:]))<0.00001):
+            if tc.all(tc.abs(tc.tensor(convergencechecker[-9:-1]) - tc.tensor(convergencechecker[-8:]))<0.00001):
                 #break if consequent meanvalues are not different
                 print(p, 'converged at', len(convergencechecker))
                 break
 
-        pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [hsic_final.cpu().detach()]})
+        pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [hsic_final.cpu().detach().numpy()]})
         pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability, len(convergencechecker)-1), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
