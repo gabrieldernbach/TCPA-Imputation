@@ -5,7 +5,7 @@ import os
 import torch as tc
 import pandas as pd
 import model_Shapley_V2 as model
-import qshapley_Shapley_V1 as sh
+import hsic as sh
 import Data_Shapley_V2 as data_sh
 import counterfactual_Shapley_V2 as cf
 import singlesampleShapley_Shapley as sssh
@@ -26,7 +26,7 @@ calc_single_shapley = False
 counterfactual = False
 conditional = False
 triangle=True
-load_epoch, load_variational, load_k, load_lin = 1000, False, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 3000, False, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 plot = False
 
@@ -58,7 +58,7 @@ if calc_shapley:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = sh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device, steps=7001)
+    shapley.calc_all(device=device, steps=10)
 
 if triangle:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
