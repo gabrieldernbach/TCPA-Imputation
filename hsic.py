@@ -149,9 +149,9 @@ class Shapley:
                 convergencechecker.append(hsic_final)
 
             if tc.all(tc.abs(tc.tensor(convergencechecker[-9:-1]) - tc.tensor(convergencechecker[-8:]))<0.0000001):
-                #break if consequent meanvalues are not different
-                print(p, 'converged at', len(convergencechecker))
-                break
+                pass#break if consequent meanvalues are not different
+                #print(p, 'converged at', len(convergencechecker))
+                #break
 
         pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [hsic_final.cpu().detach().numpy()]})
         pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability, len(convergencechecker)-1), index=False)
