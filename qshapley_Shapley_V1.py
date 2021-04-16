@@ -98,7 +98,7 @@ class Shapley:
                 print(p, 'converged at', len(convergencechecker))
                 break
 
-        pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': meandiff.cpu().detach()})
+        pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [meandiff.cpu().detach().cpu().numpy()]})
         pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability, len(convergencechecker)-1), index=False)
 
     def calc_all(self, device, steps, probabilities=[1.0]):
