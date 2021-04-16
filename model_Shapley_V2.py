@@ -120,7 +120,7 @@ class GibbsSampler(nn.Module):
         return mov_avg
 
 
-    def train(self, batch_masked, batch_target, Mask, lr, train_repeats):
+    def train(self, batch_masked, batch_target, Mask, lr, train_repeats, epoch):
         self.neuralnet.to(self.device).train()
         optimizer = tc.optim.Adam(self.neuralnet.parameters(), lr = lr)
         optimizer.zero_grad()
@@ -142,7 +142,8 @@ class GibbsSampler(nn.Module):
                 kl_loss= 0
 
             loss = criterion(prediction[Mask == 0], batch_target[Mask == 0]) + kl_loss
-            if i>0:
+
+            if i>2 or epoch < 100:
                 loss.backward()
                 optimizer.step()
 
@@ -177,7 +178,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
             lr_true = lr/100
 
         for masked_data,target, Mask in trainloader:
-            model.train(masked_data, target, Mask, lr = lr_true, train_repeats = train_repeats)
+            model.train(masked_data, target, Mask, lr = lr_true, train_repeats = train_repeats, epoch=epoch)
         if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 700, 800, 1000, 1300, 1500, 1800, 2000, 2300, 2500, 2800, 3000, 4000]:
             print('trained', epoch)
             tc.save(model, path + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
