@@ -26,7 +26,7 @@ calc_single_shapley = False
 counterfactual = False
 conditional = False
 triangle=True
-load_epoch, load_variational, load_k, load_lin = 1500, False, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 800, False, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 plot = False
 
@@ -45,7 +45,7 @@ if train_network:
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=6, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
-                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 1501, lr = 0.0001, train_repeats = 20, batch_factor=1, ncrossval=1)
+                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 801, lr = 0.0001, train_repeats = 20, batch_factor=1, ncrossval=1)
     print('training finished')
 
 if conditional:
