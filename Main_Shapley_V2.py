@@ -30,11 +30,11 @@ load_epoch, load_variational, load_k, load_lin = 1000, False, 1, 'nonlinear' #de
 ##################
 plot = False
 
-train_set, test_set = data_sh.get_data('beeline')
+train_set, test_set, protein_names = data_sh.get_data('beeline')
 
 print(train_set.shape)
 
-protein_names = None
+print(protein_names)
 
 if train_network:
     for variational in [False]:
