@@ -6,6 +6,8 @@ from sklearn.utils import shuffle
 import numpy as np
 
 def get_data(dataname):
+    protein_names=None
+
     if dataname == "protein":
         DATAPATH = '../data2/TCPA_data_sel.csv'
         #import data from PATH
@@ -94,6 +96,7 @@ def get_data(dataname):
     elif dataname == 'beeline':
         datapath = '/home/pkeyl/Projekte/Shapley/data10/Synthetic/dyn-BF/'
         data = pd.read_csv(datapath + 'ExpressionData.csv')
+        protein_names = list(data.iloc[:,0])
         data = np.array((data.iloc[:,1:]))
         tc.manual_seed(0)
         randomized_data = tc.tensor(data).t()[tc.randperm(data.shape[1]),:]
@@ -102,9 +105,10 @@ def get_data(dataname):
 
 
 
+
     train_set, test_set = randomized_data[:randomized_data.size(0)//2,:], randomized_data[randomized_data.size(0)//2:,:]
 
-    return train_set, test_set
+    return train_set, test_set, protein_names
 
 
 if __name__ == "__main__":
