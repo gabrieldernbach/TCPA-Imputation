@@ -11,6 +11,10 @@ def bn_linear(input_dim: int, output_dim: int):
         nn.BatchNorm1d(input_dim),
         nn.Linear(input_dim, output_dim, bias=False)
     )
+def init_weights(m):
+    if type(m) == nn.Linear:
+        nn.init.xavier_uniform(m.weight)
+        m.bias.data.fill_(0.01)
 
 #class ResBlock as smallest Unit
 class ResBlock(nn.Module):
@@ -28,7 +32,7 @@ class ResBlock(nn.Module):
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
-
+        self.layers.apply(init_weights)
     def forward(self,x):
         assert tc.is_floating_point(x), 'input is not float'
         residual = x.clone()
