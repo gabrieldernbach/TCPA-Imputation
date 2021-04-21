@@ -89,7 +89,7 @@ class Shapley:
                 if cMI < meandiff:
                     running_mean = tc.tensor(0).to(self.device)
                     for i in range(1,20):
-                        self.shapleyset.init_randomsample()
+                        self.shapleyset.R = self.shapleyset.init_randomsample()
                         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples)
                         for target, masked_data, Mask, masked_dataP, MaskP in self.shapleyloader:
                             # print(Mask) # check if Masks are different every time!
@@ -102,7 +102,7 @@ class Shapley:
 
                             loss = continuous.get_h(1 * (np.array(pred[:, q].cpu() - target[:, q].cpu())), k=5)
                             lossP = continuous.get_h(1 * (np.array(predP[:, q].cpu() - target[:, q].cpu())), k=5)
-                            running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
+                        running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
                     print(cMI, meandiff, running_mean)
 
                 meandiff = running_mean if running_mean < meandiff else meandiff
