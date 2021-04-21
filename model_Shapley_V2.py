@@ -170,7 +170,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
     trainset = ProteinSet(train_data, batch_factor)
     testset = ProteinSet(test_data, batch_factor)
     #trainloader = DataLoader(trainset, batch_size = nsamples*batch_factor, shuffle = True)
-    trainloader = DataLoader(trainset, batch_size = 500, shuffle = True)
+    trainloader = DataLoader(trainset, batch_size = 1000, shuffle = True)
     testloader = DataLoader(testset, batch_size = nsamples*batch_factor, shuffle = False)
 
     for epoch in range (train_epochs):
@@ -201,6 +201,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
                 with tc.no_grad():
                     averaged_results_train, single_results_train = model.test(masked_data,target,Mask)
                     print('train_loss', averaged_results_train[-1], single_results_train[-1])
+                    break
 
 
 class ProteinSet(Dataset):
