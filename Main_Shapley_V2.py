@@ -44,7 +44,7 @@ if train_network:
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=6, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
-                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 500, lr = 0.0001, train_repeats = 15, batch_factor=1, ncrossval=1)
+                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 5, lr = 0.0001, train_repeats = 15, batch_factor=1, ncrossval=1)
     print('training finished')
 
 if conditional:
