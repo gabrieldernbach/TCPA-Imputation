@@ -13,7 +13,7 @@ def bn_linear(input_dim: int, output_dim: int):
     )
 def init_weights(m):
     if type(m) == nn.Linear:
-        nn.init.xavier_uniform(m.weight)
+        nn.init.xavier_uniform_(m.weight)
 
 #class ResBlock as smallest Unit
 class ResBlock(nn.Module):
