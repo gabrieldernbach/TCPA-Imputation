@@ -92,7 +92,7 @@ class Shapley:
 
                 convergencechecker.append(meandiff)
 
-            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.0001) and t >1000:
+            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.0001) and t >200:
                 #break if consequent meanvalues are not different
                 print(p, q, 'converged at', len(convergencechecker))
                 break
@@ -117,7 +117,7 @@ def get_edges():
     filenames = os.listdir(os.getcwd() + '/results/shapley/')
     data = pd.concat([load_file(filename) for filename in filenames])
     data['target'] = data['target']
-    threshold = 1.01 # 0.5*np.median(data['shapley'])
+    threshold = 1.03 # 0.5*np.median(data['shapley'])
     #print(data)
     data2 = data[data['shapley'] > threshold]
     #print(data2)
