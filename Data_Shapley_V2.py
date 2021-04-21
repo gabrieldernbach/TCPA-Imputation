@@ -72,23 +72,17 @@ def get_data(dataname):
         tc.manual_seed(0)
         randomized_data = ordered_data[tc.randperm(ordered_data.shape[0]),:]
         np.savetxt("results/adjacency/adjacency.csv", np.array(adjacency), delimiter=",")
-        np.savetxt("results/adjacency/adjacency.csv", np.array(adjacency), delimiter=",")
         np.savetxt("results/adjacency/function.csv", np.array(function), delimiter=",")
 
-        np.savetxt("results/data/data.csv", np.array(randomized_data), delimiter=",")
+        #np.savetxt("results/data/data.csv", np.array(randomized_data), delimiter=",")
 
     elif dataname == 'threeproteins':
         tc.manual_seed(0)
         nsamples= 4000
         x = tc.randn(nsamples,1)
         y = x-0.5/(tc.abs(x)+0.2) +tc.randn(nsamples,1)
-        z = y-0.5/(tc.abs(y)+0.2) + tc.randn(nsamples,1)
-        a = tc.randn(nsamples,1)
-        b = tc.randn(nsamples,1)
-        c = b-0.5/(tc.abs(b)+0.2) + tc.randn(nsamples,1)
-        d = c-0.5/(tc.abs(c)+0.2) + 0.2*b + tc.randn(nsamples,1)
-        e = z+2*d
-        randomized_data = tc.cat([x,y,z,a,b,c,d], dim=1)
+        z = x*y-0.5/(tc.abs(y)+0.2) + tc.randn(nsamples,1)
+        randomized_data = tc.cat([x,y,z], dim=1)
         meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
         randomized_data = (randomized_data - meanv)/sdv
 
@@ -107,7 +101,7 @@ def get_data(dataname):
 
 
     train_set, test_set = randomized_data[:randomized_data.size(0)//2,:], randomized_data[randomized_data.size(0)//2:,:]
-
+    np.savetxt("results/data/data.csv", np.array(test_set), delimiter=",")
     return train_set, test_set, protein_names
 
 

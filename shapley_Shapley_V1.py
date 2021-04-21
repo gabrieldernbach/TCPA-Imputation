@@ -87,7 +87,7 @@ class Shapley:
                 counter += specific
                 convergencechecker.append(meandiff)
 
-            if all(abs(convergencechecker[-2] - convergencechecker[-1])<0.00001) and t >5000:
+            if all(abs(convergencechecker[-2] - convergencechecker[-1])<0.00001) and t >100:
                 #break if consequent meanvalues are not different
                 print(p, 'converged at', len(convergencechecker))
                 break
