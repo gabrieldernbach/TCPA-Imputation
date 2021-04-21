@@ -67,7 +67,7 @@ class Shapley:
         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples) # take the whole dataset as sample
         self.model.to(device)
         meandiff = tc.tensor(1).to(self.device) # initialize the mean difference between sets with and without p
-        convergencechecker = [a for a in range(100)] # random numbers
+        convergencechecker = [a for a in range(200)] # random numbers
 
         # add losses until convergence
         for t in range(1, 1+steps):
@@ -103,7 +103,6 @@ class Shapley:
                             loss = continuous.get_h(1 * (np.array(pred[:, q].cpu() - target[:, q].cpu())), k=5)
                             lossP = continuous.get_h(1 * (np.array(predP[:, q].cpu() - target[:, q].cpu())), k=5)
                         running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
-                    print(cMI, meandiff, running_mean)
 
                 meandiff = running_mean if running_mean < meandiff else meandiff
 
@@ -112,9 +111,9 @@ class Shapley:
                 # counter remembers the frequency of q being masked
                 convergencechecker.append(meandiff)
 
-            if convergencechecker[-100] == convergencechecker[-1]:
+            if convergencechecker[-200] == convergencechecker[-1]:
                 #break if consequent meanvalues are not different
-                print(p, 'converged at', len(convergencechecker)-100)
+                print(p, 'converged at', len(convergencechecker)-200)
                 break
 
         pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [meandiff.cpu().detach().cpu().numpy()]})
