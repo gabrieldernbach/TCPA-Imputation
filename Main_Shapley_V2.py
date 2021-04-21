@@ -5,7 +5,7 @@ import os
 import torch as tc
 import pandas as pd
 import model_Shapley_V2 as model
-import qshapley_Shapley_V1 as sh
+import minqshapley_Shapley_V1 as sh
 import Data_Shapley_V2 as data_sh
 import counterfactual_Shapley_V2 as cf
 import singlesampleShapley_Shapley as sssh

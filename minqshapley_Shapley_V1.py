@@ -4,15 +4,13 @@ from torch.utils.data import DataLoader, Dataset
 import random
 from joblib import Parallel, delayed
 import pandas as pd
-import os
-import networkx as nx
-import itertools
 import numpy as np
 from entropy_estimators import continuous
+import itertools
 
 class ShapleySet(Dataset):
     # ShapleySet generates the masked data from ground truth data. Two masks are returned, with and without p masked
-    def __init__(self, data, p, q, conditional, probability):
+    def __init__(self, data, p, q, probability= 0.5):
         self.probability = probability # with 0.5, all combinations of masked and unmasked proteins are equally likely
         #tc.manual_seed(random.randint(1,100000)) # set seed for ... delete?
         self.nsamples, self.nfeatures = data.shape[0], data.shape[1]
@@ -20,7 +18,6 @@ class ShapleySet(Dataset):
         self.R = self.init_randomsample()
         self.p = p
         self.q = q
-        self.conditional = conditional
         self.Mask, self.Maskp = None, None
         self.getMasks()
 
@@ -32,10 +29,10 @@ class ShapleySet(Dataset):
     def getMasks(self):
         # generate Mask for ShapleySet
         self.Mask = tc.distributions.bernoulli.Bernoulli(tc.tensor([self.probability] * self.nfeatures)).sample()
-        self.Mask[self.conditional] = 1
         self.Mask[self.q] = 0
         self.Maskp = self.Mask.clone()
         self.Mask[self.p], self.Maskp[self.p] = 0, 1
+
 
     def __len__(self):
         return self.nsamples
@@ -59,16 +56,18 @@ class Shapley:
         self.protein_names = protein_names if protein_names else range(self.nfeatures)
         self.device = device
 
-    def calc_shapleypq(self, p, q, conditional, steps, device, probability):
+    def calc_shapleypq(self, p, q, steps, device, probability):
+        print(p,q)
+        if p==q:
+            return p,q
         #calculate shapley values for one predicting protein p
 
         # shapleyset is initialized for every protein p
-        self.shapleyset = ShapleySet(self.data, p, q, conditional, probability) # not necessary to make it a instance variable?
+        self.shapleyset = ShapleySet(self.data, p, q,probability)
         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples) # take the whole dataset as sample
         self.model.to(device)
-        meandiff = tc.zeros(1).to(self.device) # initialize the mean difference between sets with and without p
-        criterion = F.mse_loss
-        convergencechecker = [a for a in range(10)] # random numbers
+        meandiff = tc.tensor(1).to(self.device) # initialize the mean difference between sets with and without p
+        convergencechecker = [a for a in range(100)] # random numbers
 
         # add losses until convergence
         for t in range(1, 1+steps):
@@ -83,59 +82,49 @@ class Shapley:
                 with tc.no_grad():
                     pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
 
-#                loss, lossP = criterion(pred[:, q], target[:, q]), criterion(predP[:, q], target[:, q])
+                loss = continuous.get_h(1*(np.array(pred[:, q].cpu()-target[:, q].cpu())), k=5)
+                lossP = continuous.get_h(1*(np.array(predP[:, q].cpu()-target[:, q].cpu())), k=5)
+                cMI = loss-lossP
 
-                loss = continuous.get_h(10*(np.array(pred[:, q].cpu()-target[:, q].cpu())), k=5)
-                lossP = continuous.get_h(10*(np.array(predP[:, q].cpu()-target[:, q].cpu())), k=5)
+                if cMI < meandiff:
+                    running_mean = tc.tensor(0).to(self.device)
+                    for i in range(1,20):
+                        self.shapleyset.init_randomsample()
+                        self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples)
+                        for target, masked_data, Mask, masked_dataP, MaskP in self.shapleyloader:
+                            # print(Mask) # check if Masks are different every time!
+                            target, masked_data, Mask, masked_dataP, MaskP = target.to(device), masked_data.to(
+                                device), Mask.to(
+                                device), masked_dataP.to(device), MaskP.to(device)
+                            # calculate prediction and loss
+                            with tc.no_grad():
+                                pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
 
-                meandiff = (t - 1) / t * meandiff + 1 / t * (loss/lossP)
+                            loss = continuous.get_h(1 * (np.array(pred[:, q].cpu() - target[:, q].cpu())), k=5)
+                            lossP = continuous.get_h(1 * (np.array(predP[:, q].cpu() - target[:, q].cpu())), k=5)
+                            running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
 
+                meandiff = running_mean if running_mean < meandiff else meandiff
+
+
+
+                # counter remembers the frequency of q being masked
                 convergencechecker.append(meandiff)
 
-            if tc.all(tc.abs(tc.tensor(convergencechecker[-10:-1]) - tc.tensor(convergencechecker[-9:]))<0.0001) and t >200:
+            if convergencechecker[-100] == convergencechecker[-1]:
                 #break if consequent meanvalues are not different
-                print(p, q, 'converged at', len(convergencechecker))
+                print(p, 'converged at', len(convergencechecker)-100)
                 break
 
-        pandasframe = pd.DataFrame(data = {'p':self.protein_names[p], 'q':self.protein_names[q], 'conditional': self.protein_names[conditional],'shapley': meandiff.cpu().detach()})
-        pandasframe.to_csv('results/triangle/batched_shapley_values_{}_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], self.protein_names[conditional], probability, len(convergencechecker)-1), index=False)
+        pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [meandiff.cpu().detach().cpu().numpy()]})
+        pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability, len(convergencechecker)-1), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
-        edges = get_edges()
         for probability in probabilities:
-            Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(self.protein_names.index(p_name), self.protein_names.index(q_name), self.protein_names.index(conditional_name), steps, device, probability) for p_name, q_name, conditional_name in edges)
+                Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p, q in itertools.product(range(self.nfeatures), range(self.nfeatures)))
 
 
 
 
 
-def get_edges():
-    def load_file(filename):
-        file_data = pd.read_csv(os.getcwd() + '/results/shapley/' + filename)
-        return file_data
 
-    filenames = os.listdir(os.getcwd() + '/results/shapley/')
-    data = pd.concat([load_file(filename) for filename in filenames])
-    data['target'] = data['target']
-    threshold = 1.01 # 0.5*np.median(data['shapley'])
-    #print(data)
-    data2 = data[data['shapley'] > threshold]
-    #print(data2)
-    edge_list = (list(zip(list(data2['target']), list(data2['source']))))
-    graph = nx.from_edgelist(edge_list)
-
-    all_cliques = nx.enumerate_all_cliques(graph)
-    triad_cliques = [x for x in all_cliques if len(x) == 3]
-
-
-    def get_triads(triad_clique):
-        duo_list = list(itertools.permutations(triad_clique))
-
-        return duo_list
-
-    triangle_edges = [get_triads(a) for a in triad_cliques]
-    flattened_edges = [item for sublist in triangle_edges for item in sublist]
-    flattened_edges = list(set(flattened_edges))
-    print(flattened_edges)
-    print('edges:', len(flattened_edges))
-    return flattened_edges

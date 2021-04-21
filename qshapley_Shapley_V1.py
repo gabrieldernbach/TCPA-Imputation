@@ -86,10 +86,10 @@ class Shapley:
 
                 #loss, lossP = criterion(pred[:,q], target[:,q]), criterion(predP[:,q], target[:,q])
 
-                loss = continuous.get_h(10*(np.array(pred[:, q].cpu()-target[:, q].cpu())), k=5)
-                lossP = continuous.get_h(10*(np.array(predP[:, q].cpu()-target[:, q].cpu())), k=5)
+                loss = continuous.get_h(1*(np.array(pred[:, q].cpu()-target[:, q].cpu())), k=5)
+                lossP = continuous.get_h(1*(np.array(predP[:, q].cpu()-target[:, q].cpu())), k=5)
 
-                meandiff = (t - 1) / t * meandiff + 1 / t * (loss/lossP)
+                meandiff = (t - 1) / t * meandiff + 1 / t * (loss-lossP)
                 # counter remembers the frequency of q being masked
                 convergencechecker.append(meandiff)
 
