@@ -20,8 +20,8 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
         os.makedirs(folder)
 device = tc.device('cuda:0')
 
-train_network = True
-calc_shapley = True
+train_network = False
+calc_shapley = False
 calc_single_shapley = False
 counterfactual = False
 conditional = False
