@@ -103,7 +103,7 @@ class Shapley:
     def calc_all(self, device, steps, probabilities=[0.5]):
         edges = get_edges()
         for probability in probabilities:
-            Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, q, conditional, steps, device, probability) for p, q, conditional in edges)
+            Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(self.protein_names.index(p_name), self.protein_names.index(q_name), self.protein_names.index(conditional_name), steps, device, probability) for p_name, q_name, conditional_name in edges)
 
 
 
@@ -116,7 +116,7 @@ def get_edges():
 
     filenames = os.listdir(os.getcwd() + '/results/shapley/')
     data = pd.concat([load_file(filename) for filename in filenames])
-    data['target'] = data['target'].astype(int)
+    data['target'] = data['target']
     threshold = 1.01 # 0.5*np.median(data['shapley'])
     #print(data)
     data2 = data[data['shapley'] > threshold]
