@@ -14,7 +14,6 @@ def bn_linear(input_dim: int, output_dim: int):
 def init_weights(m):
     if type(m) == nn.Linear:
         nn.init.xavier_uniform(m.weight)
-        m.bias.data.fill_(0.01)
 
 #class ResBlock as smallest Unit
 class ResBlock(nn.Module):
