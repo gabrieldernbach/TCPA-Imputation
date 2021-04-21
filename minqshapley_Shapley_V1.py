@@ -103,6 +103,7 @@ class Shapley:
                             loss = continuous.get_h(1 * (np.array(pred[:, q].cpu() - target[:, q].cpu())), k=5)
                             lossP = continuous.get_h(1 * (np.array(predP[:, q].cpu() - target[:, q].cpu())), k=5)
                             running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
+                    print(cMI, meandiff, running_mean)
 
                 meandiff = running_mean if running_mean < meandiff else meandiff
 
@@ -121,7 +122,7 @@ class Shapley:
 
     def calc_all(self, device, steps, probabilities=[0.5]):
         for probability in probabilities:
-                Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p, q in itertools.product(range(self.nfeatures), range(self.nfeatures)))
+                Parallel(n_jobs=1)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p, q in itertools.product(range(self.nfeatures), range(self.nfeatures)))
 
 
 
