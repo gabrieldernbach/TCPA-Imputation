@@ -88,6 +88,7 @@ class Shapley:
 
                 if cMI < meandiff:
                     running_mean = tc.tensor(-1).to(self.device)
+                    running_max = []
                     for i in range(1,20):
                         self.shapleyset.R = self.shapleyset.init_randomsample()
                         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples)
@@ -105,8 +106,9 @@ class Shapley:
 
                         #entweder oder:
                         #running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
-                        running_mean = (loss-lossP) if (loss-lossP)>running_mean else running_mean
-
+                        running_max.append(loss-lossP)
+                running_mean = np.maximum(running_max)
+                print(running_mean)
                 meandiff = running_mean if running_mean < meandiff else meandiff
 
 
@@ -119,7 +121,7 @@ class Shapley:
                 print(p, 'converged at', len(convergencechecker)-200)
                 break
 
-        pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [meandiff.cpu().detach().cpu().numpy()]})
+        pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [meandiff]})
         pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability, len(convergencechecker)-1), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
