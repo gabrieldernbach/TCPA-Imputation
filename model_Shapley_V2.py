@@ -24,10 +24,10 @@ class ResBlock(nn.Module):
         self.layers = nn.Sequential(
             bn_linear(input_dim, width),
             activation,
-            nn.Dropout(p=0.1),
+            nn.Dropout(p=0.0),
             bn_linear(width, width),
             activation,
-            nn.Dropout(p=0.1),
+            nn.Dropout(p=0.0),
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
@@ -86,7 +86,7 @@ class VAE(nn.Module):
 
 # wrapper for VAE: repeatedly maps protein data with VAE on correct protein data. between repeats known data is initialized again as ground truth
 class GibbsSampler(nn.Module):
-    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 15, device = 'cpu'):
+    def __init__(self, neuralnet, warm_up, convergence, result_path, max_repeats = 10, device = 'cpu'):
         super(GibbsSampler,self).__init__()
         self.neuralnet = neuralnet # VAE or other module
         self.warm_up = warm_up # first repeats are discarded
