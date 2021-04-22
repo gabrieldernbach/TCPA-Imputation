@@ -108,7 +108,6 @@ class Shapley:
                         #running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
                         running_max.append(loss-lossP)
                 running_mean = max(running_max)
-                print(running_mean)
                 meandiff = running_mean if running_mean < meandiff else meandiff
 
 
