@@ -117,7 +117,7 @@ def get_edges():
     filenames = os.listdir(os.getcwd() + '/results/shapley/')
     data = pd.concat([load_file(filename) for filename in filenames])
     data['target'] = data['target']
-    threshold = 1.01 # 0.5*np.median(data['shapley'])
+    threshold = 0.0 # 0.5*np.median(data['shapley'])
     #print(data)
     data2 = data[data['shapley'] > threshold]
     #print(data2)

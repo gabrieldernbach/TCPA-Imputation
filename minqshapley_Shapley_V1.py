@@ -102,7 +102,10 @@ class Shapley:
 
                             loss = continuous.get_h(1 * (np.array(pred[:, q].cpu() - target[:, q].cpu())), k=5)
                             lossP = continuous.get_h(1 * (np.array(predP[:, q].cpu() - target[:, q].cpu())), k=5)
-                        running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
+
+                        #entweder oder:
+                        #running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
+                        running_mean = (loss-lossP) if (loss-lossP)>running_mean else running_mean
 
                 meandiff = running_mean if running_mean < meandiff else meandiff
 
