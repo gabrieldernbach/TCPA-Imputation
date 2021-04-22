@@ -87,7 +87,7 @@ class Shapley:
                 cMI = loss-lossP
 
                 if cMI < meandiff:
-                    running_mean = tc.tensor(0).to(self.device)
+                    running_mean = tc.tensor(-1).to(self.device)
                     for i in range(1,20):
                         self.shapleyset.R = self.shapleyset.init_randomsample()
                         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples)
