@@ -88,7 +88,7 @@ class Shapley:
 
                 if cMI < meandiff:
                     running_mean = tc.tensor(-1).to(self.device)
-                    running_max = []
+                    running = []
                     for i in range(1,20):
                         self.shapleyset.R = self.shapleyset.init_randomsample()
                         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples)
@@ -106,8 +106,8 @@ class Shapley:
 
                         #entweder oder:
                         #running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
-                        running_max.append(loss-lossP)
-                running_mean = max(running_max)
+                        running.append(loss-lossP)
+                running_mean = np.median(running)
                 meandiff = running_mean if running_mean < meandiff else meandiff
 
 
@@ -115,9 +115,9 @@ class Shapley:
                 # counter remembers the frequency of q being masked
                 convergencechecker.append(meandiff)
 
-            if convergencechecker[-200] == convergencechecker[-1]:
+            if convergencechecker[-100] == convergencechecker[-1]:
                 #break if consequent meanvalues are not different
-                print(p, 'converged at', len(convergencechecker)-200)
+                print(p, 'converged at', len(convergencechecker)-100)
                 break
 
         pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [meandiff]})
