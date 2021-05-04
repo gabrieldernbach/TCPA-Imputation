@@ -43,7 +43,7 @@ class ShapleySet(Dataset):
         random_values = self.R[idx, :].float()
 
         masked_data = tc.where(self.Mask == 1, target, random_values)
-        masked_dataP = tc.where(self.Maskp == 1, target, random_values)
+        #masked_dataP = tc.where(self.Maskp == 1, target, random_values)
 
         return target, masked_data, self.Mask
 
