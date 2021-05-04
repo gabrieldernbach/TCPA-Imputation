@@ -40,7 +40,7 @@ class ShapleySet(Dataset):
     def __getitem__(self, idx):
         assert self.Mask is not None, 'did not sample'
         target = self.data[idx, :].float()
-        random_values = self.R[idx, :].float()
+        random_values = tc.zeros_like(self.R[idx, :].float())
 
         masked_data = tc.where(self.Mask == 1, target, random_values)
         masked_dataP = tc.where(self.Maskp == 1, target, random_values)
