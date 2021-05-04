@@ -46,16 +46,17 @@ class VAE(nn.Module):
         self.activation = nn.LeakyReLU() if nonlinear else nn.Identity()
         self.k = k
 
-        self.encoder = nn.Sequential(
-            *[ResBlock(input_dim, width, act_bool=True, activation = self.activation) for _ in range(depth)]
+        self.encoder = nn.Sequential(nn.Linear(input_dim, width),
+            *[ResBlock(width, width, act_bool=True, activation = self.activation) for _ in range(depth)],
+                                     nn.Linear(width, input_dim)
         )
 
-        # todo: sample width smaller/larger/equal to width?
         self.mean_layer, self.logvar_layer = nn.Linear(input_dim, sample_width), nn.Linear(input_dim, sample_width)
 
         self.decoder = nn.Sequential(
-            nn.Linear(sample_width, input_dim),
-            *[ResBlock(input_dim, width, act_bool=False) for _ in range(depth)]
+            nn.Linear(sample_width, width),
+            *[ResBlock(width, width, act_bool=False) for _ in range(depth)],
+            nn.Linear(width, input_dim)
         )
 
     def sample(self, mean, log_var, k=1):
