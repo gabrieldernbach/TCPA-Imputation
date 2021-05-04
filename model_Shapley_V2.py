@@ -47,14 +47,14 @@ class VAE(nn.Module):
         self.k = k
 
         self.encoder = nn.Sequential(nn.Linear(input_dim, width),
-            *[ResBlock(width, width, act_bool=True, activation = self.activation) for _ in range(depth)]
+            *[ResBlock(width, 2*width, act_bool=True, activation = self.activation) for _ in range(depth)]
         )
 
         self.mean_layer, self.logvar_layer = nn.Linear(width, sample_width), nn.Linear(width, sample_width)
 
         self.decoder = nn.Sequential(
             nn.Linear(sample_width, width),
-            *[ResBlock(width, width, act_bool=False) for _ in range(depth)],
+            *[ResBlock(width, 2*width, act_bool=False) for _ in range(depth)],
             nn.Linear(width, input_dim)
         )
 
@@ -179,9 +179,9 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
         trainset.R = trainset.init_randomsample()
         trainloader = DataLoader(trainset, batch_size=nsamples * batch_factor, shuffle=True)
 
-        if epoch < train_epochs*1/5:
+        if epoch < train_epochs*1/3:
             lr_true = lr
-        elif epoch < train_epochs*1/2:
+        elif epoch < train_epochs*2/3:
             lr_true = lr / 10
         else:
             lr_true = lr/100
