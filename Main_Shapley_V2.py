@@ -12,6 +12,7 @@ import singlesampleShapley_Shapley as sssh
 import conditional_loss_Shapley_V1 as cond
 import qtriangleshapley_Shapley_V1 as tri
 import qshapley_Shapley_V1 as qsh
+import hsic
 
 #specify hyperparameters
 for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/triangle', 'results/counter',
@@ -21,12 +22,14 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
 device = tc.device('cuda:1')
 
 train_network = True
-calc_shapley = True
+calc_shapley = False
+calc_hsic = True
+
 calc_single_shapley = False
 counterfactual = False
 conditional = False
 triangle=False
-load_epoch, load_variational, load_k, load_lin = 800, True, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 801, True, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 
 train_set, test_set, protein_names = data_sh.get_data('beeline')
@@ -47,17 +50,19 @@ if train_network:
                 model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 801, lr = 0.0001, train_repeats = 10, batch_factor=1, ncrossval=1)
     print('training finished')
 
-if conditional:
-    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
-    gibbs_sampler.device = device
-    shapley = cond.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device)
+
 
 if calc_shapley:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = sh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
     shapley.calc_all(device=device, steps=5001)
+
+if calc_hsic:
+    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
+    gibbs_sampler.device = device
+    shapley = hsic.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
+    shapley.calc_all(device=device, steps=100)
 
 if triangle:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?

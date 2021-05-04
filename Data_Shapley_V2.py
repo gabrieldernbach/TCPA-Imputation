@@ -88,7 +88,7 @@ def get_data(dataname):
 
 
     elif dataname == 'beeline':
-        datapath = '/home/pkeyl/Projekte/Shapley/data10/Synthetic/dyn-BF/'
+        datapath = '/home/pkeyl/Projekte/Shapley/data10/Synthetic/dyn-LL/'
         data = pd.read_csv(datapath + 'ExpressionData.csv')
         protein_names = list(data.iloc[:,0])
         data = np.array((data.iloc[:,1:]))
