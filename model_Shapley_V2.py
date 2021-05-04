@@ -180,12 +180,14 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
         trainset.R = trainset.init_randomsample()
         trainloader = DataLoader(trainset, batch_size=nsamples * batch_factor, shuffle=True)
 
-        if epoch < train_epochs*1/3:
+        if epoch < train_epochs*1/4:
             lr_true = lr
-        elif epoch < train_epochs*2/3:
+        elif epoch < train_epochs*2/4:
             lr_true = lr / 10
+        elif epoch < train_epochs*3/4:
+            lr_true = lr / 100
         else:
-            lr_true = lr/100
+            lr_true = lr/1000
 
         for masked_data,target, Mask in trainloader:
             model.train(masked_data, target, Mask, lr = lr_true, train_repeats = train_repeats, epoch=epoch)
@@ -266,8 +268,31 @@ def hsic_plus(a, b):
     H = np.eye(n) - 1.0 / n * np.ones((n, n))
     gencov = 1 / n * za.T @ H @ zb
     return np.sum(gencov ** 2)
+###################
+class RandomFeature:
+    def __init__(self, dim, sigma=None):
+        self.dim = dim
+        self.sigma = sigma
+        self.omega = None
+        self.tau = None
 
+    def fit(self, X):
+        #X has shape nsamples*nfeatures
+        n, d = X.shape
+        if self.sigma is None:
+            self.sigma = 1 / X.var()
+        self.omega = randn(d, self.dim)
+        self.tau = 2 * np.pi * rand(1, self.dim)
 
+    def transform(self, X):
+        feat = np.cos(X @ self.omega * self.sigma + self.tau)
+        return np.sqrt(2 / self.dim) * feat
+
+    def fit_transform(self, X):
+        self.fit(X)
+        return self.transform(X)
+        
+        
 def hsic_loss(target, prediction):
     ns, nf = target.shape
     residuals = target-prediction
@@ -275,7 +300,8 @@ def hsic_loss(target, prediction):
     z_vector = [ff.fit_transform(residuals[:,i]) for i in range(nf)] #needs to be vectorized --> maybe (nfeatures * dim * n_z_vectors)?
     H = tc.eye(nf) - 1.0/ nf *tc.ones(nf, nf)
     gencov = 1 / nf  + tc.einsum('dfz, ff, fdz ->ddzz', z_vector.permute(1,0,2), H, z_vector.permute(0,1,2))
-    return tc.sum(gencov**2)
+    
+    return tc.sum(gencov**2, (0,1)) #returns z*z matrix (which is the same as nfeatures*nfeatures)
 
 
 '''
