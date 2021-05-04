@@ -89,7 +89,6 @@ class Shapley:
                 cMI = loss-lossP
 
                 if cMI < meandiff:
-                    running_mean = tc.tensor(-1).to(self.device)
                     running = []
                     for i in range(1,20):
                         self.shapleyset.R = self.shapleyset.init_randomsample()
@@ -109,8 +108,8 @@ class Shapley:
                         #entweder oder:
                         #running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
                         running.append(loss-lossP)
-                running_mean = np.median(running)
-                meandiff = running_mean if running_mean < meandiff else meandiff
+                    running_mean = np.median(running)
+                    meandiff = running_mean if running_mean < meandiff else meandiff
 
 
 
@@ -127,7 +126,7 @@ class Shapley:
 
     def calc_all(self, device, steps, probabilities=[0.5]):
         for probability in probabilities:
-                Parallel(n_jobs=3)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p, q in itertools.product(range(self.nfeatures), range(self.nfeatures)))
+                Parallel(n_jobs=4)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p, q in itertools.product(range(self.nfeatures), range(self.nfeatures)))
 
 
 

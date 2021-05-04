@@ -232,7 +232,48 @@ class ProteinSet(Dataset):
         return masked_data, target, Mask
 
 
+'''
+class RandomFeature:
+    def __init__(self, dim, sigma=None):
+        self.dim = dim
+        self.sigma = sigma
+        self.omega = None
+        self.tau = None
+
+    def fit(self, X):
+        n, d = X.shape
+        if self.sigma is None:
+            self.sigma = 1 / X.var()
+        self.omega = randn(d, self.dim)
+        self.tau = 2 * np.pi * rand(1, self.dim)
+
+    def transform(self, X):
+        feat = np.cos(X @ self.omega * self.sigma + self.tau)
+        return np.sqrt(2 / self.dim) * feat
+
+    def fit_transform(self, X):
+        self.fit(X)
+        return self.transform(X)
 
 
-def hsic_loss(prediction, target):
-    pass
+def hsic_plus(a, b):
+    n, _ = a.shape
+    ff = RandomFeature(dim=1024)
+    za = ff.fit_transform(a)
+    zb = ff.fit_transform(b)
+    H = np.eye(n) - 1.0 / n * np.ones((n, n))
+    gencov = 1 / n * za.T @ H @ zb
+    return np.sum(gencov ** 2)
+
+
+def hsic_loss(target, prediction):
+    nsamples, nfeatures = target.shape
+    residuals = target-prediction
+    ff = RandomFeature(dim=1024)
+    z_vector = [ff.fit_transform(residuals[:,i]) for i in range(nfeatures)] #needs to be vectorized
+    H = tc.eye(nfeatures) - 1.0/ nfeatures *tc.ones(nfeatures, nfeatures)
+    gencov = 1 / nfeatures # + ...
+    return tc.sum(gencov**2)
+
+
+'''
