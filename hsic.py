@@ -31,7 +31,6 @@ class ShapleySet(Dataset):
         # generate Mask for ShapleySet
         self.Mask = tc.distributions.bernoulli.Bernoulli(tc.tensor([self.probability] * self.nfeatures)).sample()
         self.Mask[self.q] = 0
-        self.Maskp = self.Mask.clone()
         self.Mask[self.p] = 0
 
 
