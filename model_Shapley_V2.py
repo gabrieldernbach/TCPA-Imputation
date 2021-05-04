@@ -9,7 +9,7 @@ import pandas as pd
 def bn_linear(input_dim: int, output_dim: int):
     return nn.Sequential(
         nn.BatchNorm1d(input_dim),
-        nn.Linear(input_dim, output_dim, bias=False)
+        nn.Linear(input_dim, output_dim, bias=True)
     )
 def init_weights(m):
     if type(m) == nn.Linear:
@@ -17,7 +17,7 @@ def init_weights(m):
 
 #class ResBlock as smallest Unit
 class ResBlock(nn.Module):
-    def __init__(self, input_dim, width,  act_bool, activation=nn.LeakyReLU()):
+    def __init__(self, input_dim, width,  act_bool, activation=nn.LeakyReLU(0.2)):
         super(ResBlock, self).__init__()
 
         self.input_dim, self.act_bool = input_dim, act_bool
@@ -47,7 +47,7 @@ class VAE(nn.Module):
         self.k = k
 
         self.encoder = nn.Sequential(nn.Linear(input_dim, width),
-            *[ResBlock(width, 2*width, act_bool=True, activation = self.activation) for _ in range(depth)]
+            *[ResBlock(width, 2*width, act_bool=False, activation = self.activation) for _ in range(depth)]
         )
 
         self.mean_layer, self.logvar_layer = nn.Linear(width, sample_width), nn.Linear(width, sample_width)
@@ -234,3 +234,5 @@ class ProteinSet(Dataset):
 
 
 
+def hsic_loss(prediction, target):
+    pass
