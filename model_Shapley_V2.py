@@ -50,7 +50,7 @@ class VAE(nn.Module):
             *[ResBlock(width, width, act_bool=True, activation = self.activation) for _ in range(depth)]
         )
 
-        self.mean_layer, self.logvar_layer = nn.Linear(width, sample_width), nn.Linear(input_dim, sample_width)
+        self.mean_layer, self.logvar_layer = nn.Linear(width, sample_width), nn.Linear(width, sample_width)
 
         self.decoder = nn.Sequential(
             nn.Linear(sample_width, width),
