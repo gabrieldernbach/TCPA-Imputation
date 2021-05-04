@@ -32,7 +32,7 @@ class ShapleySet(Dataset):
         self.Mask = tc.distributions.bernoulli.Bernoulli(tc.tensor([self.probability] * self.nfeatures)).sample()
         self.Mask[self.q] = 0
         self.Maskp = self.Mask.clone()
-        self.Mask[self.p], self.Maskp[self.p] = 0, 1
+        self.Mask[self.p] = 0
 
 
     def __len__(self):
@@ -46,7 +46,7 @@ class ShapleySet(Dataset):
         masked_data = tc.where(self.Mask == 1, target, random_values)
         masked_dataP = tc.where(self.Maskp == 1, target, random_values)
 
-        return target, masked_data, self.Mask, masked_dataP, self.Maskp
+        return target, masked_data, self.Mask
 
 
 class RandomFeature:
@@ -118,44 +118,34 @@ class Shapley:
         self.shapleyset = ShapleySet(self.data, p, q,probability) # not necessary to make it a instance variable?
         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples) # take the whole dataset as sample
         self.model.to(device)
-        hsic_final = tc.tensor(1).to(self.device) # initialize the mean difference between sets with and without p
+        hsic_list = []
         criterion = F.mse_loss
         convergencechecker = [a for a in range(10)] # random numbers
-        counter = tc.ones(self.nfeatures).to(device)
 
         # add losses until convergence
         for t in range(1, 1+steps):
             if (t % 500) ==0:
                 print(t)
             self.shapleyset.getMasks()
-            for target, masked_data, Mask, masked_dataP, MaskP in self.shapleyloader:
+            for target, masked_data, Mask, in self.shapleyloader:
                 #print(Mask) # check if Masks are different every time!
-                target, masked_data, Mask, masked_dataP, MaskP = target.to(device), masked_data.to(device), Mask.to(
-                    device), masked_dataP.to(device), MaskP.to(device)
+                target, masked_data, Mask = target.to(device), masked_data.to(device), Mask.to(
+                    device)
                 #calculate prediction and loss
                 with tc.no_grad():
-                    pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
+                    pred= self.model(masked_data, Mask)
 
 
                 residualsQ = np.array(pred[:, q].cpu()- target[:, q].cpu())
                 residualsP = np.array(pred[:, p].cpu() - target[:, p].cpu())
 
-                hisc_valueP = tc.tensor(hsic_plus(residualsP[:,None], target[:, q][:,None].cpu().numpy())).float()
-                hisc_valueQ = tc.tensor(hsic_plus(residualsQ[:, None], target[:, p][:, None].cpu().numpy())).float()
+                hsic_valuePQ = hsic_plus(residualsP[:,None], residualsQ[:,None])
+                hsic_list.append(hsic_valuePQ)
 
-                hisc_value = tc.min(hisc_valueP, hisc_valueQ)
-                hsic_final = tc.min(hisc_value, hsic_final)
-                #hsic_final = (t - 1) / t * hsic_final + 1 / t * tc.tensor(hisc_value)
 
-                # counter remembers the frequency of q being masked
-                convergencechecker.append(hsic_final)
+        hsic_final = np.minimum(hsic_list)
 
-            if tc.all(tc.abs(tc.tensor(convergencechecker[-9:-1]) - tc.tensor(convergencechecker[-8:]))<0.0000001):
-                pass#break if consequent meanvalues are not different
-                #print(p, 'converged at', len(convergencechecker))
-                #break
-
-        pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [hsic_final.cpu().detach().numpy()]})
+        pandasframe = pd.DataFrame(data = {'q':  self.protein_names[q], 'p': self.protein_names[p], 'shapley': [hsic_final]})
         pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability, len(convergencechecker)-1), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
