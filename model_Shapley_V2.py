@@ -149,7 +149,7 @@ class GibbsSampler(nn.Module):
 
             loss = criterion(prediction[Mask == 0], batch_target[Mask == 0]) + kl_loss
 
-            if i>-1 or epoch < 100:
+            if i>1 or epoch < 400:
                 loss.backward()
                 optimizer.step()
 
