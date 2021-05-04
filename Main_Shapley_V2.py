@@ -21,7 +21,7 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
         os.makedirs(folder)
 device = tc.device('cuda:1')
 
-train_network = True
+train_network = False
 calc_shapley = False
 calc_hsic = True
 
@@ -29,7 +29,7 @@ calc_single_shapley = False
 counterfactual = False
 conditional = False
 triangle=False
-load_epoch, load_variational, load_k, load_lin = 801, True, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 800, True, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 
 train_set, test_set, protein_names = data_sh.get_data('beeline')
