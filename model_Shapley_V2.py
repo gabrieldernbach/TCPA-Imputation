@@ -47,11 +47,10 @@ class VAE(nn.Module):
         self.k = k
 
         self.encoder = nn.Sequential(nn.Linear(input_dim, width),
-            *[ResBlock(width, width, act_bool=True, activation = self.activation) for _ in range(depth)],
-                                     nn.Linear(width, input_dim)
+            *[ResBlock(width, width, act_bool=True, activation = self.activation) for _ in range(depth)]
         )
 
-        self.mean_layer, self.logvar_layer = nn.Linear(input_dim, sample_width), nn.Linear(input_dim, sample_width)
+        self.mean_layer, self.logvar_layer = nn.Linear(width, sample_width), nn.Linear(input_dim, sample_width)
 
         self.decoder = nn.Sequential(
             nn.Linear(sample_width, width),
