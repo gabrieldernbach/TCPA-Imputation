@@ -126,6 +126,7 @@ class Shapley:
             if (t % 500) ==0:
                 print(t)
             self.shapleyset.getMasks()
+            self.shapleyset.R = self.shapleyset.init_randomsample()
             self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples)  # take the whole dataset as sample
             for target, masked_data, Mask, in self.shapleyloader:
                 #print(Mask) # check if Masks are different every time!

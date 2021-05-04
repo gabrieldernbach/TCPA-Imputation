@@ -74,6 +74,8 @@ class Shapley:
             if (t % 500) ==0:
                 print(t)
             self.shapleyset.getMasks()
+            self.shapleyset.R = self.shapleyset.init_randomsample()
+
             for target, masked_data, Mask, masked_dataP, MaskP in self.shapleyloader:
                 #print(Mask) # check if Masks are different every time!
                 target, masked_data, Mask, masked_dataP, MaskP = target.to(device), masked_data.to(device), Mask.to(
