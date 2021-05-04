@@ -21,7 +21,7 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
         os.makedirs(folder)
 device = tc.device('cuda:1')
 
-train_network = False
+train_network = True
 calc_shapley = False
 calc_hsic = True
 
@@ -29,7 +29,7 @@ calc_single_shapley = False
 counterfactual = False
 conditional = False
 triangle=False
-load_epoch, load_variational, load_k, load_lin = 800, True, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 800, False, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 
 train_set, test_set, protein_names = data_sh.get_data('beeline')
@@ -62,7 +62,7 @@ if calc_hsic:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = hsic.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device, steps=100)
+    shapley.calc_all(device=device, steps=150)
 
 if triangle:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
