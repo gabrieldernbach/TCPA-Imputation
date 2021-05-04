@@ -25,10 +25,10 @@ class ResBlock(nn.Module):
             #bn_linear(input_dim, width),
             nn.Linear(input_dim, width),
             activation,
-            nn.Dropout(p=0.0),
+            nn.Dropout(p=0.03),
             bn_linear(width, width),
             activation,
-            nn.Dropout(p=0.0),
+            nn.Dropout(p=0.03),
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
@@ -191,7 +191,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
 
         for masked_data,target, Mask in trainloader:
             model.train(masked_data, target, Mask, lr = lr_true, train_repeats = train_repeats, epoch=epoch)
-        if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 700, 800, 1000, 1300, 1500, 1800, 2000, 2300, 2500, 2800, 3000, 4000]:
+        if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 700, 800, 1000, 1300, 1500, 1800, 2000, 2300, 2500, 2800, 3000, 3500, 4000]:
             print('trained', epoch)
             tc.save(model, path + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
 
