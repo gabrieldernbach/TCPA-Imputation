@@ -17,12 +17,13 @@ def init_weights(m):
 
 #class ResBlock as smallest Unit
 class ResBlock(nn.Module):
-    def __init__(self, input_dim, width,  act_bool, activation=nn.LeakyReLU(0.2)):
+    def __init__(self, input_dim, width,  act_bool, activation=nn.LeakyReLU(0.1)):
         super(ResBlock, self).__init__()
 
         self.input_dim, self.act_bool = input_dim, act_bool
         self.layers = nn.Sequential(
-            bn_linear(input_dim, width),
+            #bn_linear(input_dim, width),
+            nn.Linear(input_dim, width),
             activation,
             nn.Dropout(p=0.0),
             bn_linear(width, width),
@@ -47,14 +48,14 @@ class VAE(nn.Module):
         self.k = k
 
         self.encoder = nn.Sequential(nn.Linear(input_dim, width),
-            *[ResBlock(width, 2*width, act_bool=False, activation = self.activation) for _ in range(depth)]
+            *[ResBlock(width, 2*width, act_bool=True, activation = self.activation) for _ in range(depth)]
         )
 
         self.mean_layer, self.logvar_layer = nn.Linear(width, sample_width), nn.Linear(width, sample_width)
 
         self.decoder = nn.Sequential(
             nn.Linear(sample_width, width),
-            *[ResBlock(width, 2*width, act_bool=False) for _ in range(depth)],
+            *[ResBlock(width, 2*width, act_bool=True) for _ in range(depth)],
             nn.Linear(width, input_dim)
         )
 
@@ -233,6 +234,7 @@ class ProteinSet(Dataset):
 
 
 '''
+
 class RandomFeature:
     def __init__(self, dim, sigma=None):
         self.dim = dim
@@ -267,12 +269,12 @@ def hsic_plus(a, b):
 
 
 def hsic_loss(target, prediction):
-    nsamples, nfeatures = target.shape
+    ns, nf = target.shape
     residuals = target-prediction
     ff = RandomFeature(dim=1024)
-    z_vector = [ff.fit_transform(residuals[:,i]) for i in range(nfeatures)] #needs to be vectorized
-    H = tc.eye(nfeatures) - 1.0/ nfeatures *tc.ones(nfeatures, nfeatures)
-    gencov = 1 / nfeatures # + ...
+    z_vector = [ff.fit_transform(residuals[:,i]) for i in range(nf)] #needs to be vectorized --> maybe (nfeatures * dim * n_z_vectors)?
+    H = tc.eye(nf) - 1.0/ nf *tc.ones(nf, nf)
+    gencov = 1 / nf  + tc.einsum('dfz, ff, fdz ->ddzz', z_vector.permute(1,0,2), H, z_vector.permute(0,1,2))
     return tc.sum(gencov**2)
 
 
