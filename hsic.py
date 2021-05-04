@@ -116,7 +116,7 @@ class Shapley:
 
         # shapleyset is initialized for every protein p
         self.shapleyset = ShapleySet(self.data, p, q,probability) # not necessary to make it a instance variable?
-        self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples) # take the whole dataset as sample
+
         self.model.to(device)
         hsic_list = []
         criterion = F.mse_loss
@@ -127,6 +127,7 @@ class Shapley:
             if (t % 500) ==0:
                 print(t)
             self.shapleyset.getMasks()
+            self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples)  # take the whole dataset as sample
             for target, masked_data, Mask, in self.shapleyloader:
                 #print(Mask) # check if Masks are different every time!
                 target, masked_data, Mask = target.to(device), masked_data.to(device), Mask.to(
