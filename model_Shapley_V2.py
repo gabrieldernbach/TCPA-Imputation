@@ -236,57 +236,25 @@ class ProteinSet(Dataset):
 
 
 '''
-
 class RandomFeature:
     def __init__(self, dim, sigma=None):
         self.dim = dim
         self.sigma = sigma
         self.omega = None
         self.tau = None
+        self.pi = tc.tensor(np.pi)
 
     def fit(self, X):
-        n, d = X.shape
-        if self.sigma is None:
-            self.sigma = 1 / X.var()
-        self.omega = randn(d, self.dim)
-        self.tau = 2 * np.pi * rand(1, self.dim)
-
-    def transform(self, X):
-        feat = np.cos(X @ self.omega * self.sigma + self.tau)
-        return np.sqrt(2 / self.dim) * feat
-
-    def fit_transform(self, X):
-        self.fit(X)
-        return self.transform(X)
-
-
-def hsic_plus(a, b):
-    n, _ = a.shape
-    ff = RandomFeature(dim=1024)
-    za = ff.fit_transform(a)
-    zb = ff.fit_transform(b)
-    H = np.eye(n) - 1.0 / n * np.ones((n, n))
-    gencov = 1 / n * za.T @ H @ zb
-    return np.sum(gencov ** 2)
-###################
-class RandomFeature:
-    def __init__(self, dim, sigma=None):
-        self.dim = dim
-        self.sigma = sigma
-        self.omega = None
-        self.tau = None
-
-    def fit(self, X):
-        #X has shape nsamples*nfeatures
         n, d = X.shape
         if self.sigma is None:
             self.sigma = 1 / X.var()
         self.omega = tc.randn(d, self.dim)
-        self.tau = 2 * tc.pi * tc.rand(1, self.dim)
+        self.tau = 2 * self.pi * tc.rand(1, self.dim)
 
     def transform(self, X):
-        feat = tc.cos(X @ self.omega * self.sigma + self.tau)
-        return tc.sqrt(2 / self.dim) * feat
+        product = tc.einsum('sf, zd -> sdz', X, self.omega)
+        feat = tc.cos(product* self.sigma + self.tau.unsqueeze(2))
+        return (2 / self.dim)**0.5 * feat
 
     def fit_transform(self, X):
         self.fit(X)
@@ -295,13 +263,12 @@ class RandomFeature:
         
 def hsic_loss(target, prediction):
     ns, nf = target.shape
-    residuals = target-prediction
+    residuals = target#-prediction
     ff = RandomFeature(dim=1024)
-    z_vector = [ff.fit_transform(residuals[:,i]) for i in range(nf)] #needs to be vectorized --> maybe (nfeatures * dim * n_z_vectors)?
-    H = tc.eye(nf) - 1.0/ nf *tc.ones(nf, nf)
-    gencov = 1 / nf  + tc.einsum('dfz, ff, fdz ->ddzz', z_vector.permute(1,0,2), H, z_vector.permute(0,1,2))
-    
-    return tc.sum(gencov**2, (0,1)) #returns z*z matrix (which is the same as nfeatures*nfeatures)
+    z_vector_v = ff.fit_transform(residuals)
+    H = tc.eye(ns) - 1.0/ nf *tc.ones(ns, ns)
+    gencov = 1 / nf  + tc.einsum('sdz, ss, rdy -> zy', z_vector_v, H, z_vector_v)
+    return gencov**2 #returns z*z matrix (which is the same as nfeatures*nfeatures)
 
 
 '''
