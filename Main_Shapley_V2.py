@@ -15,14 +15,14 @@ import qshapley_Shapley_V1 as qsh
 import hsic
 
 #specify hyperparameters
-for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley','results/hsic', 'results/triangle', 'results/counter',
+for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/hsic', 'results/triangle', 'results/counter',
                'results/conditional_loss'):
     if not os.path.exists(folder):
         os.makedirs(folder)
 device = tc.device('cuda:1')
 
-train_network = False
-calc_shapley = False
+train_network = True
+calc_shapley = True
 calc_hsic = True
 
 calc_single_shapley = False
