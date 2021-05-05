@@ -21,7 +21,7 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
         os.makedirs(folder)
 device = tc.device('cuda:1')
 
-train_network = True
+train_network = False
 calc_shapley = False
 calc_hsic = True
 
@@ -43,7 +43,7 @@ if train_network:
         for nonlinear in [True]:
             for k in [1]:
                 #specify neural network
-                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*128, sample_width=train_set.size(1)*128, depth=7, variational = variational, nonlinear = True, k = k)
+                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*32, sample_width=train_set.size(1)*128, depth=15, variational = variational, nonlinear = True, k = k)
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=6, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation

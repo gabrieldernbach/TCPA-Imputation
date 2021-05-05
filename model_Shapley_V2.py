@@ -191,7 +191,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
 
         for masked_data,target, Mask in trainloader:
             model.train(masked_data, target, Mask, lr = lr_true, train_repeats = train_repeats, epoch=epoch)
-        if epoch in [1,2,3,4,5,6,7,8,9, 10, 50, 100, 200, 300, 500, 700, 800, 1000, 1300, 1500, 1800, 2000, 2300, 2500, 2800, 3000, 3500, 4000]:
+        if epoch in [1, 10, 50, 100, 200, 300, 500, 700, 800, 1000, 1300, 1500, 1800, 2000, 2300, 2500, 2800, 3000, 3500, 4000]:
             print('trained', epoch)
             tc.save(model, path + '/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(epoch, model.neuralnet.variational, model.neuralnet.k, model.neuralnet.lin))
 
@@ -281,12 +281,12 @@ class RandomFeature:
         n, d = X.shape
         if self.sigma is None:
             self.sigma = 1 / X.var()
-        self.omega = randn(d, self.dim)
-        self.tau = 2 * np.pi * rand(1, self.dim)
+        self.omega = tc.randn(d, self.dim)
+        self.tau = 2 * tc.pi * tc.rand(1, self.dim)
 
     def transform(self, X):
-        feat = np.cos(X @ self.omega * self.sigma + self.tau)
-        return np.sqrt(2 / self.dim) * feat
+        feat = tc.cos(X @ self.omega * self.sigma + self.tau)
+        return tc.sqrt(2 / self.dim) * feat
 
     def fit_transform(self, X):
         self.fit(X)
