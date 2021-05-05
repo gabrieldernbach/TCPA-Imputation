@@ -66,7 +66,7 @@ class Shapley:
         self.shapleyset = ShapleySet(self.data, p, q,probability)
         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples) # take the whole dataset as sample
         self.model.to(device)
-        meandiff = tc.tensor(1).to(self.device) # initialize the mean difference between sets with and without p
+        meandiff = tc.tensor(5).to(self.device) # initialize the mean difference between sets with and without p
         convergencechecker = [a for a in range(200)] # random numbers
 
         # add losses until convergence
