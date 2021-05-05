@@ -63,7 +63,7 @@ class VAE(nn.Module):
         std = tc.exp(0.5 * log_var).repeat(k,1)
         eps = tc.randn_like(std)
         results = mean.repeat(k,1) + eps*std
-        results = tc.clamp(results, min=-10, max=+10)
+        results = tc.clamp(results, min=-5, max=+5)
         #print(tc.any(tc.abs(results)>10))
 
         #std = tc.exp(0.5 * log_var)
