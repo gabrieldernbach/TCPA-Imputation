@@ -252,7 +252,7 @@ class RandomFeature:
         self.tau = 2 * self.pi * tc.rand(1, self.dim)
 
     def transform(self, X):
-        product = tc.einsum('sf, zd -> sdz', X, self.omega)
+        product = tc.einsum('sf, zd -> sdz', X, self.omega) # sample x features * features x dim = sample x dim x feature
         feat = tc.cos(product* self.sigma + self.tau.unsqueeze(2))
         return (2 / self.dim)**0.5 * feat
 
@@ -263,7 +263,7 @@ class RandomFeature:
         
 def hsic_loss(target, prediction):
     ns, nf = target.shape
-    residuals = target#-prediction
+    residuals = target-prediction
     ff = RandomFeature(dim=1024)
     z_vector_v = ff.fit_transform(residuals)
     H = tc.eye(ns) - 1.0/ nf *tc.ones(ns, ns)

@@ -149,7 +149,7 @@ class Shapley:
         hsic_final = np.min(np.array(hsic_list))
 
         pandasframe = pd.DataFrame(data = {'q':  self.protein_names[q], 'p': self.protein_names[p], 'shapley': [hsic_final]})
-        pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{}_{:.2f}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability), index=False)
+        pandasframe.to_csv('results/hsic/batched_shapley_values_{}_{}_{:.2f}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
         for probability in probabilities:
