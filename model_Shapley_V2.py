@@ -36,7 +36,7 @@ class ResBlock(nn.Module):
     def forward(self,x):
         assert tc.is_floating_point(x), 'input is not float'
         residual = x.clone()
-        return residual + self.layers(x)
+        return self.layers(x) #+residual
 
 class VAE(nn.Module):
     def __init__(self, input_dim, width, sample_width, depth, variational=True, nonlinear = True, k=1):
