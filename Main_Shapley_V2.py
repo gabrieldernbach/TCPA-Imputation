@@ -41,11 +41,11 @@ if train_network:
         for nonlinear in [True]:
             for k in [1]:
                 #specify neural network
-                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*32, sample_width=train_set.size(1)*64, depth=15, variational = variational, nonlinear = True, k = k)
+                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*32, sample_width=train_set.size(1)*64, depth=12, variational = variational, nonlinear = True, k = k)
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=6, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
-                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 2001, lr = 0.0001, train_repeats = 10, batch_factor=1, ncrossval=1)
+                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 2001, lr = 0.0001, train_repeats =10, batch_factor=1, ncrossval=1)
     print('training finished')
 
 
