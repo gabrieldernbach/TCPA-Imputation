@@ -149,7 +149,7 @@ class Shapley:
                 else:
                     pass
 
-
+        print(hsic_list)
         hsic_final = np.min(np.array(hsic_list))
 
         pandasframe = pd.DataFrame(data = {'q':  self.protein_names[q], 'p': self.protein_names[p], 'shapley': [hsic_final]})
