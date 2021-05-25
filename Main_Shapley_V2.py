@@ -1,4 +1,5 @@
 import os
+import sys
 # implement plot
 # implement one hot tumor into vae and cross.validate
 
@@ -14,7 +15,7 @@ import qtriangleshapley_Shapley_V1 as tri
 import qshapley_Shapley_V1 as qsh
 import hsic
 
-datatype = 'BFC'
+datatype = sys.argv[1]
 #specify hyperparameters
 for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/hsic'+ datatype, 'results/triangle', 'results/counter',
                'results/conditional_loss'):
