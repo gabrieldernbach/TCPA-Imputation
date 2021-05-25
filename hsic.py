@@ -142,8 +142,8 @@ class Shapley:
                     residualsP = np.array(pred[:, p].cpu() - target[:, p].cpu())
 
                     #hsic_valuePQ = hsic_plus(residualsP[:,None], residualsQ[:,None])
-                    hsic_valuePQ = hsic_plus(residualsP[:, None], target[:,q][:, None])
-                    hsic_valueQP = hsic_plus(residualsQ[:, None], target[:,p][:, None])
+                    hsic_valuePQ = hsic_plus(residualsP[:, None], np.array(target.cpu()[:,q][:, None]))
+                    hsic_valueQP = hsic_plus(residualsQ[:, None], np.array(target.cpu()[:,p][:, None]))
                     hsic_value = np.min(hsic_valuePQ, hsic_valueQP)
                     hsic_list.append(hsic_value)
                 else:
