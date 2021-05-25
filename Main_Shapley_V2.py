@@ -26,7 +26,7 @@ train_network = False
 calc_shapley = False
 calc_hsic = True
 
-load_epoch, load_variational, load_k, load_lin = 10, True, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 2000, True, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 
 train_set, test_set, protein_names = data_sh.get_data(datatype)
@@ -59,4 +59,4 @@ if calc_hsic:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
     shapley = hsic.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device, datatype = datatype)
-    shapley.calc_all(device=device, steps=50)
+    shapley.calc_all(device=device, steps=250)
