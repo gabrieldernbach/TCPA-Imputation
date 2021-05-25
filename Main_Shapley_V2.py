@@ -14,7 +14,7 @@ import qtriangleshapley_Shapley_V1 as tri
 import qshapley_Shapley_V1 as qsh
 import hsic
 
-datatype = 'LL'
+datatype = 'BFC'
 #specify hyperparameters
 for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/hsic'+ datatype, 'results/triangle', 'results/counter',
                'results/conditional_loss'):
@@ -29,7 +29,7 @@ calc_hsic = True
 load_epoch, load_variational, load_k, load_lin = 10, True, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 
-train_set, test_set, protein_names = data_sh.get_data('beeline')
+train_set, test_set, protein_names = data_sh.get_data(datatype)
 
 print(train_set.shape)
 
