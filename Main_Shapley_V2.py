@@ -14,8 +14,9 @@ import qtriangleshapley_Shapley_V1 as tri
 import qshapley_Shapley_V1 as qsh
 import hsic
 
+datatype = 'LL'
 #specify hyperparameters
-for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/hsic', 'results/triangle', 'results/counter',
+for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/hsic'+ datatype, 'results/triangle', 'results/counter',
                'results/conditional_loss'):
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -61,27 +62,5 @@ if calc_shapley:
 if calc_hsic:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
-    shapley = hsic.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
+    shapley = hsic.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device, datatype = datatype)
     shapley.calc_all(device=device, steps=250)
-
-if triangle:
-    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
-    gibbs_sampler.device = device
-    shapley = tri.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    shapley.calc_all(device=device, steps=5001)
-
-if calc_single_shapley:
-    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
-    gibbs_sampler.device = device
-    shapley = sssh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    #shapley.calc_shapleypqs(p=2,sample=0, steps = 100, device = device, probability = 0.5)
-    shapley.calc_all(device=device, steps=300)
-
-if counterfactual:
-    gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
-    gibbs_sampler.device = device
-    counter = cf.Counter(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
-    #counter.calc_counterfactualpq(5,0.1,3, device=device)
-    counter.calc_all(device=device)
-
-

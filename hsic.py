@@ -99,13 +99,14 @@ def hsic(a, b, sig_a=0.1, sig_b=0.1):
 
 
 class Shapley:
-    def __init__(self, model, data, protein_names, device):
+    def __init__(self, model, data, protein_names, device, datatype):
         self.data = data
         self.nsamples, self.nfeatures = data.shape
         self.model = model
         self.model.neuralnet.eval()
         self.protein_names = protein_names if protein_names else range(self.nfeatures)
         self.device = device
+        self.datatype=datatype
 
     def calc_shapleypq(self, p, q, steps, device, probability):
         print(p,q)
@@ -152,7 +153,7 @@ class Shapley:
         hsic_final = np.min(np.array(hsic_list))
 
         pandasframe = pd.DataFrame(data = {'q':  self.protein_names[q], 'p': self.protein_names[p], 'shapley': [hsic_final]})
-        pandasframe.to_csv('results/hsic/batched_shapley_values_{}_{}_{:.2f}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability), index=False)
+        pandasframe.to_csv('results/hsic' + self.datatype + '/batched_shapley_values_{}_{}_{:.2f}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
         for probability in probabilities:
