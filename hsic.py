@@ -144,7 +144,7 @@ class Shapley:
                     #hsic_valuePQ = hsic_plus(residualsP[:,None], residualsQ[:,None])
                     hsic_valuePQ = hsic_plus(residualsP[:, None], np.array(target.cpu()[:, q][:, None]))
                     hsic_valueQP = hsic_plus(residualsQ[:, None], np.array(target.cpu()[:, p][:, None]))
-                    hsic_value = np.maximum(hsic_valuePQ, hsic_valueQP)
+                    hsic_value = np.mean(hsic_valuePQ, hsic_valueQP)
                     hsic_list.append(hsic_value)
                 else:
                     pass
@@ -157,7 +157,7 @@ class Shapley:
 
     def calc_all(self, device, steps, probabilities=[0.5]):
         for probability in probabilities:
-                Parallel(n_jobs=2)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p, q in itertools.product(range(self.nfeatures), range(self.nfeatures)) if p>q)
+                Parallel(n_jobs=3)(delayed(self.calc_shapleypq)(p, q, steps, device, probability) for p, q in itertools.product(range(self.nfeatures), range(self.nfeatures)) if p>q)
 
 
 
