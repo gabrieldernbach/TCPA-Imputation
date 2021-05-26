@@ -103,8 +103,8 @@ class Shapley:
                             with tc.no_grad():
                                 pred, predP = self.model(masked_data, Mask), self.model(masked_dataP, MaskP)
 
-                            loss = continuous.get_h(1 * (np.array(pred[:, q].cpu() - target[:, q].cpu())), k=5)
-                            lossP = continuous.get_h(1 * (np.array(predP[:, q].cpu() - target[:, q].cpu())), k=5)
+                            loss = continuous.get_h(2 * (np.array(pred[:, q].cpu() - target[:, q].cpu())), k=5)
+                            lossP = continuous.get_h(2 * (np.array(predP[:, q].cpu() - target[:, q].cpu())), k=5)
 
                         #entweder oder:
                         #running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
