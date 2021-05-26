@@ -21,7 +21,7 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
                'results/conditional_loss'):
     if not os.path.exists(folder):
         os.makedirs(folder)
-device = tc.device('cuda:1')
+device = tc.device('cuda:0')
 
 train_network = False
 calc_shapley = True
