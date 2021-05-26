@@ -144,7 +144,7 @@ class Shapley:
                     #hsic_valuePQ = hsic_plus(residualsP[:,None], residualsQ[:,None])
                     hsic_valuePQ = hsic_plus(residualsP[:, None], np.array(target.cpu()[:, q][:, None]))
                     hsic_valueQP = hsic_plus(residualsQ[:, None], np.array(target.cpu()[:, p][:, None]))
-                    hsic_value = np.mean(hsic_valuePQ, hsic_valueQP)
+                    hsic_value = 0.5 * (hsic_valuePQ + hsic_valueQP) #np.maximum(hsic_valuePQ, hsic_valueQP)
                     hsic_list.append(hsic_value)
                 else:
                     pass
