@@ -17,7 +17,7 @@ import hsic
 
 datatype = sys.argv[1]
 #specify hyperparameters
-for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley', 'results/hsic'+ datatype, 'results/triangle', 'results/counter',
+for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley'+datatype, 'results/hsic'+ datatype, 'results/triangle', 'results/counter',
                'results/conditional_loss'):
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -53,7 +53,7 @@ if train_network:
 if calc_shapley:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
-    shapley = sh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device)
+    shapley = sh.Shapley(gibbs_sampler, data = test_set, protein_names= protein_names, device=device, datatype = datatype)
     shapley.calc_all(device=device, steps=5001)
 
 if calc_hsic:

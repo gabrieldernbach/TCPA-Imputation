@@ -48,13 +48,14 @@ class ShapleySet(Dataset):
         return target, masked_data, self.Mask, masked_dataP, self.Maskp
 
 class Shapley:
-    def __init__(self, model, data, protein_names, device):
+    def __init__(self, model, data, protein_names, device, datatype):
         self.data = data
         self.nsamples, self.nfeatures = data.shape
         self.model = model
         self.model.neuralnet.eval()
         self.protein_names = protein_names if protein_names else range(self.nfeatures)
         self.device = device
+        self.datatype = datatype
 
     def calc_shapleypq(self, p, q, steps, device, probability):
         print(p,q)
@@ -122,7 +123,7 @@ class Shapley:
                 break
 
         pandasframe = pd.DataFrame(data = {'target':  self.protein_names[q], 'source': self.protein_names[p], 'shapley': [meandiff]})
-        pandasframe.to_csv('results/shapley/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability, len(convergencechecker)-1), index=False)
+        pandasframe.to_csv('results' + self.datatype + '/shapley/batched_shapley_values_{}_{}_{:.2f}_{}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability, len(convergencechecker)-1), index=False)
 
     def calc_all(self, device, steps, probabilities=[0.5]):
         for probability in probabilities:
