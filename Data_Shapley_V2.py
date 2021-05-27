@@ -117,7 +117,7 @@ def get_data(dataname):
         meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
         randomized_data = (randomized_data - meanv)/sdv
 
-    elif dataname == 'beeline':
+    elif dataname == 'LI':
         datapath = '/mnt/scratch2/mlprot/Projekte/Shapley/data10/Synthetic/dyn-LI/'
         data = pd.read_csv(datapath + 'ExpressionData.csv')
         protein_names = list(data.iloc[:,0])
@@ -127,7 +127,7 @@ def get_data(dataname):
         meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
         randomized_data = (randomized_data - meanv)/sdv
 
-    elif dataname == 'beeline':
+    elif dataname == 'BF':
         datapath = '/mnt/scratch2/mlprot/Projekte/Shapley/data10/Synthetic/dyn-BF/'
         data = pd.read_csv(datapath + 'ExpressionData.csv')
         protein_names = list(data.iloc[:,0])
@@ -137,7 +137,7 @@ def get_data(dataname):
         meanv, sdv = randomized_data.mean(axis = 0, keepdim=True), randomized_data.std(axis=0, keepdim=True)
         randomized_data = (randomized_data - meanv)/sdv
 
-    elif dataname == 'beeline':
+    elif dataname == 'TF':
         datapath = '/mnt/scratch2/mlprot/Projekte/Shapley/data10/Synthetic/dyn-TF/'
         data = pd.read_csv(datapath + 'ExpressionData.csv')
         protein_names = list(data.iloc[:,0])
