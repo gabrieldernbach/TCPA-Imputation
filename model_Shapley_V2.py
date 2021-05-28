@@ -338,6 +338,7 @@ class MlpMix(nn.Module):
 
         self.out_dim = nn.Linear(hidden, ins)
         self.out_samp = nn.Linear(n_samp, 1)
+        self.variational = False
 
     def forward(self, x): # from batch x ins
         # to batch x hidden
