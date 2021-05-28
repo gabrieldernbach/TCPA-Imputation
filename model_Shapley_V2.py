@@ -80,7 +80,10 @@ class VAE(nn.Module):
             reconstruction = self.decoder(latent)
 
         # return mean und log variance for kl loss in VAE framework
-        return reconstruction, mean_l, log_var_l
+        if self.variational:
+            return reconstruction, mean_l, log_var_l
+        else:
+            return reconstruction
 
 # wrapper for VAE: repeatedly maps protein data with VAE on correct protein data. between repeats known data is initialized again as ground truth
 class GibbsSampler(nn.Module):
@@ -105,7 +108,10 @@ class GibbsSampler(nn.Module):
         Mask = Mask.to(self.device)
 
         for i in range(self.max_repeats):
-            x, mean_l, log_var_l = self.neuralnet(x)
+            if self.neuralnet.viational:
+                x, mean_l, log_var_l = self.neuralnet(x)
+            else:
+                x = self.neuralnet(x)
 
             #replace known true values in reconstruction of x with initial_value
             x = tc.where(Mask==1, initial_value, x)
