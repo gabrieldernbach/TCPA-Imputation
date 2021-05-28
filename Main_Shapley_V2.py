@@ -21,7 +21,7 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
                'results/conditional_loss'):
     if not os.path.exists(folder):
         os.makedirs(folder)
-device = tc.device('cuda:0')
+device = tc.device('cuda:1')
 
 train_network = True
 calc_shapley = True
@@ -42,7 +42,7 @@ if train_network:
             for k in [1]:
                 #specify neural network
                 #vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*32, sample_width=train_set.size(1)*64, depth=12, variational = variational, nonlinear = True, k = k)
-                vae = model.MlpMix(reps=40, n_samp=500, hidden=512, ins= train_set.size(1))
+                vae = model.MlpMix(reps=20, n_samp=500, hidden=512, ins= train_set.size(1))
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=6, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
