@@ -135,7 +135,10 @@ class GibbsSampler(nn.Module):
         x = batch_masked.clone()
         loss = 0
         for i in range(train_repeats):
-            prediction, mean_, log_var_ = self.neuralnet(x)
+            if self.neuralnet.variational:
+                prediction, mean_, log_var_ = self.neuralnet(x)
+            else:
+                prediction = self.neuralnet(x)
             x = tc.where(Mask==1, batch_masked, prediction)
             x.detach_()
             #compute KL-divergence and MSE Loss
@@ -283,6 +286,8 @@ class FlowMlp(nn.Module):
             nn.Linear(hidden*2, hidden),
         )
         self.outs = nn.Linear(hidden, ins)
+
+        self.variational=False
 
     def forward(self, x):
         x = self.ins(x)

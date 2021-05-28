@@ -37,7 +37,7 @@ print(train_set.shape)
 print(protein_names)
 
 if train_network:
-    for variational in [True]:
+    for variational in [False]:
         for nonlinear in [True]:
             for k in [1]:
                 #specify neural network
