@@ -288,6 +288,7 @@ class FlowMlp(nn.Module):
         self.outs = nn.Linear(hidden, ins)
 
         self.variational=False
+        self.k=1
 
     def forward(self, x):
         x = self.ins(x)
@@ -339,6 +340,7 @@ class MlpMix(nn.Module):
         self.out_dim = nn.Linear(hidden, ins)
         self.out_samp = nn.Linear(n_samp, 1)
         self.variational = False
+        self.k = 1
 
     def forward(self, x): # from batch x ins
         # to batch x hidden
