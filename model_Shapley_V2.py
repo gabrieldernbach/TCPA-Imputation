@@ -108,7 +108,7 @@ class GibbsSampler(nn.Module):
         Mask = Mask.to(self.device)
 
         for i in range(self.max_repeats):
-            if self.neuralnet.viational:
+            if self.neuralnet.variational:
                 x, mean_l, log_var_l = self.neuralnet(x)
             else:
                 x = self.neuralnet(x)
