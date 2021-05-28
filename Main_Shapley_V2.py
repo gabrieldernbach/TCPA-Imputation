@@ -42,7 +42,7 @@ if train_network:
             for k in [1]:
                 #specify neural network
                 #vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*32, sample_width=train_set.size(1)*64, depth=12, variational = variational, nonlinear = True, k = k)
-                vae = model.MlpMix(reps=2, n_samp=500, hidden=64, ins= train_set.size(1))
+                vae = model.MlpMix(reps=10, n_samp=500, hidden=64, ins= train_set.size(1))
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=6, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
