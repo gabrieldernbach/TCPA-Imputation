@@ -117,7 +117,7 @@ class Shapley:
                 # counter remembers the frequency of q being masked
                 convergencechecker.append(meandiff)
 
-            if convergencechecker[-10] == convergencechecker[-1]:
+            if convergencechecker[-150] == convergencechecker[-1]:
                 #break if consequent meanvalues are not different
                 print(p, 'converged at', len(convergencechecker)-100)
                 break
