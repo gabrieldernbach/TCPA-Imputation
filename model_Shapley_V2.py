@@ -140,7 +140,8 @@ class GibbsSampler(nn.Module):
 
         x = batch_masked.clone()
         loss = 0
-        for i in range(train_repeats):
+        train_repeats_actual = train_repeats//2 if epoch < 500 else train_repeats
+        for i in range(train_repeats_actual):
             if self.neuralnet.variational:
                 prediction, mean_, log_var_ = self.neuralnet(x)
             else:
