@@ -25,7 +25,7 @@ class ResBlock(nn.Module):
             #bn_linear(input_dim, width),
             nn.Linear(input_dim, width),
             activation,
-            nn.Dropout(p=0.05),
+            nn.Dropout(p=0.0),
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
@@ -184,7 +184,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
 
     for epoch in range (train_epochs):
         trainset.R = trainset.init_randomsample()
-        trainloader = DataLoader(trainset, batch_size=32, shuffle=True)
+        trainloader = DataLoader(trainset, batch_size=64, shuffle=True)
 
         if epoch < train_epochs*1/4:
             lr_true = lr
