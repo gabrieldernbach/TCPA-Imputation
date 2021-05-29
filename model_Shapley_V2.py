@@ -184,7 +184,7 @@ def cross_validate(model, train_data, test_data, path, train_epochs, lr,train_re
 
     for epoch in range (train_epochs):
         trainset.R = trainset.init_randomsample()
-        trainloader = DataLoader(trainset, batch_size=256, shuffle=True)
+        trainloader = DataLoader(trainset, batch_size=32, shuffle=True)
 
         if epoch < train_epochs*1/4:
             lr_true = lr
