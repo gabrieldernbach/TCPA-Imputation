@@ -62,11 +62,13 @@ class Shapley:
         if p==q:
             return p,q
         #calculate shapley values for one predicting protein p
+        criterion = F.mse_loss
 
         # shapleyset is initialized for every protein p
         self.shapleyset = ShapleySet(self.data, p, q,probability)
         self.shapleyloader = DataLoader(self.shapleyset, batch_size=self.nsamples) # take the whole dataset as sample
         self.model.to(device)
+
         meandiff = tc.tensor(5).to(self.device) # initialize the mean difference between sets with and without p
         convergencechecker = [a for a in range(200)] # random numbers
 
@@ -87,6 +89,10 @@ class Shapley:
 
                 loss = continuous.get_h(2*(np.array(pred[:, q].cpu()-target[:, q].cpu())), k=5)
                 lossP = continuous.get_h(2*(np.array(predP[:, q].cpu()-target[:, q].cpu())), k=5)
+
+                #loss = criterion(pred[:, q],target[:, q])
+                #lossP = criterion(predP[:, q],target[:, q])
+
                 cMI = loss-lossP
 
                 if cMI < meandiff:
@@ -106,6 +112,9 @@ class Shapley:
                             loss = continuous.get_h(2 * (np.array(pred[:, q].cpu() - target[:, q].cpu())), k=5)
                             lossP = continuous.get_h(2 * (np.array(predP[:, q].cpu() - target[:, q].cpu())), k=5)
 
+                            #loss = criterion(pred[:, q], target[:, q])
+                            #lossP = criterion(predP[:, q], target[:, q])
+
                         #entweder oder:
                         #running_mean = (i-1)/i*running_mean + 1/i*(loss-lossP)
                         running.append(loss-lossP)
@@ -113,12 +122,10 @@ class Shapley:
                     meandiff = running_mean if running_mean < meandiff else meandiff
 
 
-
-                # counter remembers the frequency of q being masked
                 convergencechecker.append(meandiff)
 
             if convergencechecker[-150] == convergencechecker[-1]:
-                #break if consequent meanvalues are not different
+                #break if consecutive meanvalues are not different
                 print(p, 'converged at', len(convergencechecker)-100)
                 break
 
