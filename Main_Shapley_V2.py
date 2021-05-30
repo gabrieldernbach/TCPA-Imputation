@@ -24,10 +24,10 @@ for folder in ('results','results/figures', 'results/log', 'results/trained_mode
 device = tc.device('cuda:1')
 
 train_network = True
-calc_shapley = False
+calc_shapley = True
 calc_hsic = True
 
-load_epoch, load_variational, load_k, load_lin = 8000, True, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin = 6000, True, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 
 train_set, test_set, protein_names = data_sh.get_data(datatype)
@@ -46,7 +46,7 @@ if train_network:
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=5, convergence=0.0, result_path='results', device = device)
                 #train and test model in n fold crossvalidation
-                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 8001, lr = 0.00001, train_repeats =20, batch_factor=1, ncrossval=1)
+                model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 6001, lr = 0.00001, train_repeats =20, batch_factor=1, ncrossval=1)
     print('training finished')
 
 
