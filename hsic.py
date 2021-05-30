@@ -136,7 +136,7 @@ class Shapley:
                 #calculate prediction and loss
                 with tc.no_grad():
                     pred= self.model(masked_data, Mask)
-
+                print(criterion(pred, target))
                 if criterion(pred, target)<0.4:
                     residualsQ = np.array(pred[:, q].cpu() / target[:, q].cpu())
                     residualsP = np.array(pred[:, p].cpu() / target[:, p].cpu())
@@ -151,6 +151,7 @@ class Shapley:
 
 
         hsic_final = np.min(np.array(hsic_list))
+        print(len(hsic_list))
 
         pandasframe = pd.DataFrame(data = {'q':  self.protein_names[q], 'p': self.protein_names[p], 'shapley': [hsic_final]})
         pandasframe.to_csv('results/hsic' + self.datatype + '/batched_shapley_values_{}_{}_{:.2f}_specific.csv'.format(self.protein_names[p], self.protein_names[q], probability), index=False)
