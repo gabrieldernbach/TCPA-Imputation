@@ -138,8 +138,8 @@ class Shapley:
                     pred= self.model(masked_data, Mask)
 
                 if criterion(pred, target)<0.4:
-                    residualsQ = np.array(pred[:, q].cpu()- target[:, q].cpu())
-                    residualsP = np.array(pred[:, p].cpu() - target[:, p].cpu())
+                    residualsQ = np.array(pred[:, q].cpu() / target[:, q].cpu())
+                    residualsP = np.array(pred[:, p].cpu() / target[:, p].cpu())
 
                     hsic_value = hsic_plus(residualsP[:,None], residualsQ[:,None])
                     #hsic_valuePQ = hsic_plus(residualsP[:, None], np.array(target.cpu()[:, q][:, None]))
