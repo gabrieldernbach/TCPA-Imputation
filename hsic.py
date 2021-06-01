@@ -137,7 +137,7 @@ class Shapley:
                 with tc.no_grad():
                     pred= self.model(masked_data, Mask)
                 print(criterion(pred, target))
-                if criterion(pred, target)<0.2:
+                if criterion(pred, target)<1.0:
                     residualsQ = np.array(pred[:, q].cpu() - target[:, q].cpu())
                     residualsP = np.array(pred[:, p].cpu() - target[:, p].cpu())
 
