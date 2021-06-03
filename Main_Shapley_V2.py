@@ -15,8 +15,7 @@ import qtriangleshapley_Shapley_V1 as tri
 import qshapley_Shapley_V1 as qsh
 import hsic
 
-#datatype = sys.argv[1]
-datatype = 'wine'
+datatype = sys.argv[1]
 #specify hyperparameters
 for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley'+datatype, 'results/hsic'+ datatype, 'results/triangle', 'results/counter',
                'results/conditional_loss'):
@@ -54,7 +53,6 @@ gibbs_sampler = model.SimpleModel(nfeatures = train_set.size(1), hidden = 10*tra
 for i in range(100):
     model.train(gibbs_sampler, trainset=train_set, lr = 0.0001, device=device)
 
-g
 if calc_hsic:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device
