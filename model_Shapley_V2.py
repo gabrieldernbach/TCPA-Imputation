@@ -22,8 +22,8 @@ class ResBlock(nn.Module):
 
         self.input_dim, self.act_bool = input_dim, act_bool
         self.layers = nn.Sequential(
-            #bn_linear(input_dim, width),
-            nn.Linear(input_dim, width),
+            bn_linear(input_dim, width),
+            #nn.Linear(input_dim, width),
             activation,
             nn.Dropout(p=0.01),
             bn_linear(width, input_dim),
