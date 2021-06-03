@@ -372,7 +372,7 @@ class SimpleModel(nn.Module):
         super(SimpleModel, self).__init__()
 
         self.layers = nn.Sequential(nn.Linear(2*nfeatures, 5*nfeatures),
-                                    nn.Linear(5*nfeatures, hidden)
+                                    nn.Linear(5*nfeatures, hidden),
                                     *[ResBlock(hidden, hidden, act_bool=True) for _ in range(depth)],
                                     nn.Linear(hidden, 5 * nfeatures),
                                     nn.Linear(5*nfeatures, nfeatures))
