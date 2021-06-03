@@ -27,7 +27,7 @@ train_network = False
 calc_shapley = True
 calc_hsic = True
 
-load_epoch, load_variational, load_k, load_lin = 6000, True, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin =1006000, True, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 
 train_set, test_set, protein_names = data_sh.get_data(datatype)
