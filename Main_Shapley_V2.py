@@ -49,7 +49,7 @@ if train_network:
                 model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 6001, lr = 0.00001, train_repeats =20, batch_factor=1, ncrossval=1)
     print('training finished')
 
-gibbs_sampler = model.SimpleModel(nfeatures = train_set.size(1), hidden = 100*train_set.size(1), depth = 20)
+gibbs_sampler = model.SimpleModel(nfeatures = train_set.size(1), hidden = 20*train_set.size(1), depth = 10)
 for i in range(100):
     model.train(gibbs_sampler, trainset=train_set, testset = test_set, lr = 0.0001, device=device)
 for i in range(100):
