@@ -15,15 +15,16 @@ import qtriangleshapley_Shapley_V1 as tri
 import qshapley_Shapley_V1 as qsh
 import hsic
 
-datatype = sys.argv[1]
+#datatype = sys.argv[1]
+datatype = 'wine'
 #specify hyperparameters
 for folder in ('results','results/figures', 'results/log', 'results/trained_model', 'results/adjacency','results/data', 'results/shapley'+datatype, 'results/hsic'+ datatype, 'results/triangle', 'results/counter',
                'results/conditional_loss'):
     if not os.path.exists(folder):
         os.makedirs(folder)
-device = tc.device('cuda:1')
+device = tc.device('cuda:0')
 
-train_network = True
+train_network = False
 calc_shapley = True
 calc_hsic = True
 
@@ -49,10 +50,11 @@ if train_network:
                 model.cross_validate(model=gibbs_sampler, train_data=train_set, test_data = test_set, path = 'results', train_epochs = 6001, lr = 0.00001, train_repeats =20, batch_factor=1, ncrossval=1)
     print('training finished')
 
+gibbs_sampler = model.SimpleModel(nfeatures = train_set.size(1), hidden = 10*train_set.size(1), depth = 10)
+for i in range(100):
+    model.train(gibbs_sampler, trainset=train_set, lr = 0.0001, device=device)
 
-
-
-
+g
 if calc_hsic:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?
     gibbs_sampler.device = device

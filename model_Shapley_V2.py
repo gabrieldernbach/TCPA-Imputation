@@ -237,7 +237,7 @@ class ProteinSet(Dataset):
     def __getitem__(self, idx):
         Mask = tc.distributions.bernoulli.Bernoulli(tc.tensor([0.5] * self.nfeatures)).sample().float()
         target = self.data[idx%self.nsamples, :]
-        random_values = tc.zeros_like(self.R[idx%self.nsamples, :])
+        random_values = tc.randn_like(self.R[idx%self.nsamples, :])
         masked_data = tc.where(Mask == 1.0, target, random_values)
 
         return masked_data, target, Mask
@@ -365,3 +365,42 @@ class MlpMix(nn.Module):
         # batch x ins
         x = self.out_dim(x)
         return x
+
+
+class SimpleModel(nn.Module):
+    def __init__(self, nfeatures, hidden, depth):
+        super(SimpleModel, self).__init__()
+
+        self.layers = nn.Sequential(nn.Linear(2*nfeatures, hidden),
+                                    *[ResBlock(hidden, hidden, act_bool=True) for _ in range(depth)],
+                                    nn.Linear(hidden, nfeatures))
+
+    def forward(self, x , Mask):
+        x1 = x.clone().detach()
+        x2 = (1-x).detach()
+        x1[Mask == 0] = 0
+        x2[Mask == 0] = 0
+
+        x = tc.cat([x1, x2], dim=1)
+        x = self.layers(x)
+        return x
+
+def train(neuralnet, trainset, lr, device):
+    traindataset = ProteinSet(trainset, 1)
+    trainloader = DataLoader(traindataset, batch_size = 10)
+    neuralnet.to(device).train()
+    optimizer = tc.optim.Adam(neuralnet.parameters(), lr=lr)
+    optimizer.zero_grad()
+    criterion = F.mse_loss
+
+    for batch_masked, batch_target, Mask in trainloader:
+        batch_masked, batch_target, Mask = batch_masked.to(device), batch_target.to(device), Mask.to(device)
+
+        prediction = neuralnet(batch_masked, Mask)
+        loss = criterion(prediction[Mask == 0], batch_target[Mask == 0])
+
+        loss.backward()
+        optimizer.step()
+    print(loss)
+
+
