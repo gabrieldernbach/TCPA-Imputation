@@ -408,8 +408,9 @@ def train(neuralnet, trainset, testset, lr, device):
     for batch_masked, batch_target, Mask in testloader:
         batch_masked, batch_target, Mask = batch_masked.to(device), batch_target.to(device), Mask.to(device)
 
-        testresult = neuralnet.forward(batch_masked, Mask)
-        testloss = criterion(testresult[Mask == 0], batch_target[Mask == 0])
+        with tc.no_grad():
+            testresult = neuralnet.forward(batch_masked, Mask)
+            testloss = criterion(testresult[Mask == 0], batch_target[Mask == 0])
     print(loss, testloss)
 
 
