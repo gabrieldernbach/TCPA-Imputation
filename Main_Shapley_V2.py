@@ -51,9 +51,9 @@ if train_network:
 
 gibbs_sampler = model.SimpleModel(nfeatures = train_set.size(1), hidden = 100*train_set.size(1), depth = 20)
 for i in range(100):
-    model.train(gibbs_sampler, trainset=train_set, testset = test_set, lr = 0.00001, device=device)
+    model.train(gibbs_sampler, trainset=train_set, testset = test_set, lr = 0.0001, device=device)
 for i in range(100):
-    model.train(gibbs_sampler, trainset=train_set, testset = test_set, lr = 0.000001, device=device)
+    model.train(gibbs_sampler, trainset=train_set, testset = test_set, lr = 0.00001, device=device)
 
 if calc_hsic:
     gibbs_sampler = tc.load('results/trained_model/Gibbs_sampler_trainepochs={}_var={}_k={}_{}.pt'.format(load_epoch, load_variational, load_k, load_lin)) # save and load always gibbs_sampler or model within?

@@ -410,6 +410,6 @@ def train(neuralnet, trainset, testset, lr, device):
 
         testresult = neuralnet.forward(batch_masked, Mask)
         testloss = criterion(testresult[Mask == 0], batch_target[Mask == 0])
-    print(loss.item(), testloss.item())
+    print(loss, testloss)
 
 
