@@ -235,7 +235,7 @@ class ProteinSet(Dataset):
         return self.nsamples*self.factor
 
     def __getitem__(self, idx):
-        Mask = tc.distributions.bernoulli.Bernoulli(tc.tensor([0.5] * self.nfeatures)).sample().float()
+        Mask = tc.distributions.bernoulli.Bernoulli(tc.tensor([0.8] * self.nfeatures)).sample().float()
         target = self.data[idx%self.nsamples, :]
         random_values = tc.randn_like(self.R[idx%self.nsamples, :])
         masked_data = tc.where(Mask == 1.0, target, random_values)
