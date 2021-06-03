@@ -103,7 +103,7 @@ class Shapley:
         self.data = data
         self.nsamples, self.nfeatures = data.shape
         self.model = model
-        self.model.neuralnet.eval()
+        self.model.eval()
         self.protein_names = protein_names if protein_names else range(self.nfeatures)
         self.device = device
         self.datatype=datatype
