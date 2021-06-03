@@ -385,9 +385,12 @@ class SimpleModel(nn.Module):
         x = self.layers(x)
         return x
 
-def train(neuralnet, trainset, lr, device):
+def train(neuralnet, trainset, testset, lr, device):
     traindataset = ProteinSet(trainset, 1)
     trainloader = DataLoader(traindataset, batch_size = 10)
+    testdataset = ProteinSet(testset, 1)
+    testloader = DataLoader(testdataset, batch_size = testset.size(1), shuffle = False)
+
     neuralnet.to(device).train()
     optimizer = tc.optim.Adam(neuralnet.parameters(), lr=lr)
     optimizer.zero_grad()
@@ -401,6 +404,12 @@ def train(neuralnet, trainset, lr, device):
 
         loss.backward()
         optimizer.step()
-    print(loss)
+
+    for batch_masked, batch_target, Mask in testloader:
+        batch_masked, batch_target, Mask = batch_masked.to(device), batch_target.to(device), Mask.to(device)
+
+        testresult = neuralnet.forward(batch_masked, Mask)
+        testloss = criterion(testresult[Mask == 0], batch_target[Mask == 0])
+    print(loss.item(), testloss.item())
 
 
