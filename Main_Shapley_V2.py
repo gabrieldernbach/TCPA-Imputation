@@ -50,9 +50,9 @@ if train_network:
     print('training finished')
 
 gibbs_sampler = model.SimpleModel(nfeatures = train_set.size(1), hidden = 20*train_set.size(1), depth = 10)
-for i in range(100):
+for i in range(1):
     model.train(gibbs_sampler, trainset=train_set, testset = test_set, lr = 0.0001, device=device)
-for i in range(100):
+for i in range(1):
     model.train(gibbs_sampler, trainset=train_set, testset = test_set, lr = 0.00001, device=device)
 
 if calc_hsic:
