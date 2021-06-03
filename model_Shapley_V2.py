@@ -375,6 +375,11 @@ class SimpleModel(nn.Module):
                                     *[ResBlock(hidden, hidden, act_bool=True) for _ in range(depth)],
                                     nn.Linear(hidden, nfeatures))
 
+        for layer in self.layers:
+            if isinstance(layer, nn.Linear):
+                tc.nn.init.xavier_uniform_(layer.weight)
+
+
     def forward(self, x , Mask):
         x1 = x.clone().detach()
         x2 = (1-x).detach()
@@ -406,6 +411,7 @@ def train(neuralnet, trainset, testset, lr, device):
         optimizer.step()
 
     for batch_masked, batch_target, Mask in testloader:
+        neuralnet.eval()
         batch_masked, batch_target, Mask = batch_masked.to(device), batch_target.to(device), Mask.to(device)
 
         with tc.no_grad():
