@@ -371,11 +371,11 @@ class SimpleModel(nn.Module):
     def __init__(self, nfeatures, hidden, depth):
         super(SimpleModel, self).__init__()
 
-        self.layers = nn.Sequential(nn.Linear(2*nfeatures, 10*nfeatures),
-                                    nn.Linear(10*nfeatures, hidden)
+        self.layers = nn.Sequential(nn.Linear(2*nfeatures, 5*nfeatures),
+                                    nn.Linear(5*nfeatures, hidden)
                                     *[ResBlock(hidden, hidden, act_bool=True) for _ in range(depth)],
-                                    nn.Linear(hidden, 10 * nfeatures),
-                                    nn.Linear(10*nfeatures, nfeatures))
+                                    nn.Linear(hidden, 5 * nfeatures),
+                                    nn.Linear(5*nfeatures, nfeatures))
 
         for layer in self.layers:
             if isinstance(layer, nn.Linear):
