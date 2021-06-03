@@ -25,7 +25,7 @@ class ResBlock(nn.Module):
             #bn_linear(input_dim, width),
             nn.Linear(input_dim, width),
             activation,
-            nn.Dropout(p=0.05),
+            nn.Dropout(p=0.01),
             bn_linear(width, input_dim),
             activation if act_bool else nn.Identity()
         )
