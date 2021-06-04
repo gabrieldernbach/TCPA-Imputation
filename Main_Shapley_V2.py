@@ -27,7 +27,7 @@ train_network = True
 calc_shapley = True
 calc_hsic = True
 
-load_epoch, load_variational, load_k, load_lin =6000, False, 1, 'nonlinear' #define model that shall be loaded for shapley
+load_epoch, load_variational, load_k, load_lin =6000, True, 1, 'nonlinear' #define model that shall be loaded for shapley
 ##################
 
 train_set, test_set, protein_names = data_sh.get_data(datatype)
@@ -37,11 +37,11 @@ print(train_set.shape)
 print(protein_names)
 
 if train_network:
-    for variational in [False]:
+    for variational in [True]:
         for nonlinear in [True]:
             for k in [1]:
                 #specify neural network
-                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*32, sample_width=train_set.size(1)*128, depth=8, variational = variational, nonlinear = True, k = k)
+                vae = model.VAE(input_dim=train_set.size(1), width=train_set.size(1)*32, sample_width=train_set.size(1)*512, depth=8, variational = variational, nonlinear = True, k = k)
                 #vae = model.MlpMix(reps=10, n_samp=256, hidden=128, ins= train_set.size(1))
                 #init gibb sampler with neural network
                 gibbs_sampler = model.GibbsSampler(neuralnet=vae, warm_up=5, convergence=0.0, result_path='results', device = device)
